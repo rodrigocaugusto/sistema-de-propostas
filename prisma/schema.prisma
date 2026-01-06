@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String
+  password      String    // Hashed password
+  role          String    @default("admin") // "admin" (company admin) or "member" (company user)
+  isSuperAdmin  Boolean   @default(false) // System Owner
+  companyId     String?   // User belongs to a company
+  company       Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Company {
+  id            String    @id @default(uuid())
+  name          String
+  slug          String?   @unique // For future public pages
+  responsible   String?
+  email         String?
+  phone         String?
+  logoUrl       String?
+  website       String?
+  webhookUrl    String?
+  
+  plan          String    @default("free")
+  status        String    @default("active") // active, suspended
+  
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  
+  users         User[]
+  clients       Client[]
+  proposals     Proposal[]
+  products      Product[]
+  paymentMethods PaymentMethod[]
+  proposalNotes ProposalNote[]
+  paymentTerms  PaymentTermsTemplate[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Client {
+  id        String     @id @default(uuid())
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String
+  companyName String?  @map("company") // Refactored column name locally but mapping to keep DB clean if possible, usually better to rename. Let's keep it simple and just use `companyName` or keep `company` if it conflicts. 
+                     // Wait, the previous field was `company String?`. `company` is now the relation. I MUST rename the string field `company` to `clientCompany` or similar to avoid conflict with the relation `company`.
+  clientCompany   String?
+  email     String
+  phone     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  proposals Proposal[]
+
+  // Removing global unique constraint on email. Email should be unique PER COMPANY if we want multiple companies to have the same client email.
+  // @@unique([email]) -> Changing to stricter compound unique or just allowing duplicates for now to be safe.
+  @@unique([companyId, email])
+}
+
+model Proposal {
+  id                  String        @id @default(uuid())
+  companyId           String
+  company             Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  proposalNumber      String?
+  clientName          String
+  clientCompany       String?
+  introduction        String?
+  clientEmail         String
+  clientPhone         String?
+  status              String        @default("draft")
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @default(now()) @updatedAt
+  totalOneTime        Float
+  totalRecurring      Float
+  recurringPeriodType String?
+  recurringPeriod     Int?
+  paymentMethods      Json?
+  paymentLink         String?
+  paymentTerms        Json?
+  validityDays        Int           @default(15)
+  notes               Json?
+  customColors        Json?
+  items               ProductItem[]
+  client              Client?       @relation(fields: [clientId], references: [id])
+  clientId            String?
+}
+
+model ProductItem {
+  id            String   @id @default(uuid())
+  name          String
+  description   String
+  price         Float
+  originalPrice Float?
+  quantity      Int
+  type          String
+  showDiscount  Boolean  @default(true)
+  proposalId    String
+  proposal      Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name          String
+  description   String
+  price         Float
+  originalPrice Float?
+  type          String
+  plans         Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PaymentMethod {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProposalNote {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentTermsTemplate {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
