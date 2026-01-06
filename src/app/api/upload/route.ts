@@ -5,13 +5,13 @@ import { Upload } from '@aws-sdk/lib-storage';
 
 // Configure Backblaze S3 Client
 const s3Client = new S3Client({
-    region: 'us-west-004', // Set directly if fixed, or use process.env.B2_REGION
-    endpoint: 'https://s3.us-west-004.backblazeb2.com', // process.env.B2_ENDPOINT
+    region: 'us-west-004',
+    endpoint: 'https://s3.us-west-004.backblazeb2.com',
     credentials: {
-        accessKeyId: process.env.B2_KEY_ID || '', // 0045bee0fafc1f90000000004
-        secretAccessKey: process.env.B2_APPLICATION_KEY || '', // K004OvJCt6RxCTg/leNNDAz3PxDNI1Y
+        accessKeyId: process.env.B2_KEY_ID || '0045bee0fafc1f90000000004',
+        secretAccessKey: process.env.B2_APPLICATION_KEY || 'K004OvJCt6RxCTg/leNNDAz3PxDNI1Y',
     },
-    forcePathStyle: false // Backblaze supports virtual-hosted style but safer depending on implementation
+    forcePathStyle: false
 });
 
 export async function POST(request: NextRequest) {
