@@ -105,7 +105,7 @@ export async function acceptProposal(id: string) {
             const { sendAcceptanceConfirmation } = await import('@/lib/email');
 
             // Build proposal URL
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
             const proposalUrl = `${baseUrl}/p/${proposal.id}`;
 
             await sendAcceptanceConfirmation(company.email, {
