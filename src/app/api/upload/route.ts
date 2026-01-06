@@ -1,6 +1,18 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+
+// Configure Backblaze S3 Client
+const s3Client = new S3Client({
+    region: 'us-west-004', // Set directly if fixed, or use process.env.B2_REGION
+    endpoint: 'https://s3.us-west-004.backblazeb2.com', // process.env.B2_ENDPOINT
+    credentials: {
+        accessKeyId: process.env.B2_KEY_ID || '', // 0045bee0fafc1f90000000004
+        secretAccessKey: process.env.B2_APPLICATION_KEY || '', // K004OvJCt6RxCTg/leNNDAz3PxDNI1Y
+    },
+    forcePathStyle: false // Backblaze supports virtual-hosted style but safer depending on implementation
+});
 
 export async function POST(request: NextRequest) {
     try {
@@ -32,24 +44,45 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        // Create unique filename with timestamp
+        // Create unique filename
         const timestamp = Date.now();
-        const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const fileName = `logo_${timestamp}_${originalName}`;
+        const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileName = `logos/${timestamp}_${cleanName}`;
+        const bucketName = process.env.B2_BUCKET_NAME || 'sistema-proposal-dl';
 
-        // Ensure uploads directory exists
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-        await mkdir(uploadsDir, { recursive: true });
+        // Convert File to Stream/Buffer for Upload
+        // Note: For large files, stream is better, but arrayBuffer works for 5MB
+        // @aws-sdk/lib-storage Upload handles streams/buffers well
 
-        // Save file
-        const filePath = path.join(uploadsDir, fileName);
-        await writeFile(filePath, buffer);
+        // Since File is Blob, we can use it directly or via buffer
+        // Let's use arrayBuffer -> Buffer as standard node approach
+        // const bytes = await file.arrayBuffer();
+        // const buffer = Buffer.from(bytes);
 
-        // Return public URL
-        const publicUrl = `/uploads/${fileName}`;
+        // Upload to B2
+        const parallelUploads3 = new Upload({
+            client: s3Client,
+            params: {
+                Bucket: bucketName,
+                Key: fileName,
+                Body: file.stream(), // Direct stream from the request file
+                ContentType: file.type,
+                // ACL: 'public-read' // Backblaze buckets are private by default, public folders need bucket settings. 
+                // If your bucket is public, files are readable. If private, this won't make it public via API alone usually.
+            },
+        });
+
+        await parallelUploads3.done();
+
+        // Construct Public URL
+        // Format: https://<BucketName>.<Endpoint>/<Key>  OR  https://<Endpoint>/file/<BucketName>/<Key>
+        // Backblaze Friendly URL: https://<BucketName>.s3.us-west-004.backblazeb2.com/<Key>
+        // OR Native URL: https://f004.backblazeb2.com/file/<BucketName>/<Key> (Usually preferred for CDN)
+
+        // Let's use the S3 compatible URL if the bucket is public
+        // https://sistema-proposal-dl.s3.us-west-004.backblazeb2.com/logos/filename...
+
+        const publicUrl = `https://${bucketName}.s3.us-west-004.backblazeb2.com/${fileName}`;
 
         return NextResponse.json({
             success: true,
@@ -57,10 +90,10 @@ export async function POST(request: NextRequest) {
             fileName: fileName
         });
 
-    } catch (error) {
-        console.error('Upload error:', error);
+    } catch (error: any) {
+        console.error('B2 Upload error:', error);
         return NextResponse.json(
-            { error: 'Erro ao fazer upload do arquivo' },
+            { error: 'Erro ao fazer upload do arquivo: ' + error.message },
             { status: 500 }
         );
     }
