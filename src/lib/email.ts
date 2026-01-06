@@ -379,10 +379,15 @@ export async function sendAcceptanceConfirmation(
     }
 ) {
     const template = getAcceptanceConfirmationTemplate(data);
-    return sendEmail({
+
+    // First email to the company/admin (to)
+    const emailToCompany = sendEmail({
         to,
         subject: template.subject,
         html: template.html,
         text: template.text,
     });
+
+    // We can also send a carbon copy to the proposal creator if different, for now to is the company email
+    return emailToCompany;
 }

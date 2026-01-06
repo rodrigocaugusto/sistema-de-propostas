@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from "sonner";
 import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
+import InputMask from 'react-input-mask';
 
 interface CompanyFormProps {
     initialData: Company | null;
@@ -221,14 +222,21 @@ export function CompanyForm({ initialData }: CompanyFormProps) {
 
                         <div className="space-y-2">
                             <Label htmlFor="phone">Celular / WhatsApp</Label>
-                            <Input
-                                id="phone"
-                                name="phone"
-                                placeholder="(11) 99999-9999"
+                            <InputMask
+                                mask="(99) 99999-9999"
                                 value={formData.phone || ''}
                                 onChange={handleChange}
-                                required
-                            />
+                            >
+                                {(inputProps: any) => (
+                                    <Input
+                                        {...inputProps}
+                                        id="phone"
+                                        name="phone"
+                                        placeholder="(11) 99999-9999"
+                                        required
+                                    />
+                                )}
+                            </InputMask>
                         </div>
                     </div>
 

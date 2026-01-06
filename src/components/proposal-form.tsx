@@ -16,6 +16,7 @@ import { Loader2, Plus, Trash2, ArrowRight, Eye, Calendar, Mail, Phone, ShieldCh
 import { Separator } from '@/components/ui/separator';
 import { Company, ProductPlan } from '@/lib/db';
 import { getContrastTextStyle, getContrastMutedStyle, isDarkColor } from '@/lib/colors';
+import InputMask from 'react-input-mask';
 
 interface Item {
     id: string;
@@ -452,13 +453,20 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium text-slate-600 dark:text-slate-400">Celular / WhatsApp</Label>
-                                <Input
-                                    type="tel"
-                                    placeholder="(11) 99999-9999"
+                                <InputMask
+                                    mask="(99) 99999-9999"
                                     value={clientPhone}
                                     onChange={(e) => setClientPhone(e.target.value)}
-                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-                                />
+                                >
+                                    {(inputProps: any) => (
+                                        <Input
+                                            {...inputProps}
+                                            type="tel"
+                                            placeholder="(11) 99999-9999"
+                                            className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                        />
+                                    )}
+                                </InputMask>
                             </div>
                         </div>
                     </CardContent>

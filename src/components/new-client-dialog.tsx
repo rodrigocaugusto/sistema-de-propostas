@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { saveClient } from '@/app/actions';
 import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
+import InputMask from 'react-input-mask';
 
 export function NewClientDialog() {
     const [open, setOpen] = useState(false);
@@ -101,12 +102,19 @@ export function NewClientDialog() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="phone">Telefone / WhatsApp</Label>
-                        <Input
-                            id="phone"
+                        <InputMask
+                            mask="(99) 99999-9999"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            placeholder="(11) 99999-9999"
-                        />
+                        >
+                            {(inputProps: any) => (
+                                <Input
+                                    {...inputProps}
+                                    id="phone"
+                                    placeholder="(11) 99999-9999"
+                                />
+                            )}
+                        </InputMask>
                     </div>
                     <DialogFooter className="pt-4">
                         <Button type="button" variant="outline" onClick={() => setOpen(false)}>
