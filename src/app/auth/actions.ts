@@ -12,8 +12,14 @@ import {
 } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
-export async function login(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+export async function login(email: string, password: string, honeypot?: string): Promise<{ success: boolean; error?: string }> {
     try {
+        // 1. Honeypot check: If the hidden field is filled, it's a bot
+        if (honeypot) {
+            console.log(`Bot attempt blocked for email: ${email}`);
+            return { success: false, error: 'Credenciais inválidas' };
+        }
+
         const user = await prisma.user.findUnique({
             where: { email: email.toLowerCase() },
         });
@@ -26,16 +32,45 @@ export async function login(email: string, password: string): Promise<{ success:
             return { success: false, error: 'Usuário desativado. Entre em contato com o administrador.' };
         }
 
+        // 2. Bruteforce protection check
+        if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+            return {
+                success: false,
+                error: 'Muitas tentativas falhas. Conta bloqueada temporariamente. Tente novamente em 15 minutos.'
+            };
+        }
+
         const isValid = await verifyPassword(password, user.password);
 
         if (!isValid) {
+            // Increment failed attempts
+            const attempts = user.failedLoginAttempts + 1;
+            let lockoutUntil = null;
+
+            // Block after 5 failed attempts
+            if (attempts >= 5) {
+                lockoutUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes lockout
+            }
+
+            await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    failedLoginAttempts: attempts,
+                    lockoutUntil: lockoutUntil
+                }
+            });
+
             return { success: false, error: 'Credenciais inválidas' };
         }
 
-        // Update last login
+        // Successful Login: Reset counters
         await prisma.user.update({
             where: { id: user.id },
-            data: { lastLogin: new Date() },
+            data: {
+                lastLogin: new Date(),
+                failedLoginAttempts: 0,
+                lockoutUntil: null
+            },
         });
 
         const token = await createToken({

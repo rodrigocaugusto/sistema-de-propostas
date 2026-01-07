@@ -9,21 +9,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { login } from '@/app/auth/actions';
 import { requestPasswordReset } from '@/app/actions';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Loader2, Lock, Mail, Sparkles, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
-interface CompanyData {
-    name: string;
-    logoUrl: string | null;
-}
 
 export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    // Honeypot Field for Bot Protection
+    const [honeypot, setHoneypot] = useState('');
+
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [company, setCompany] = useState<CompanyData | null>(null);
 
     // Forgot Password State
     const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
@@ -45,7 +43,8 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const result = await login(email, password);
+            // Pass honeypot to login action
+            const result = await login(email, password, honeypot);
 
             if (result.success) {
                 toast.success('Login realizado com sucesso!');
@@ -107,6 +106,21 @@ export default function LoginPage() {
                 </CardHeader>
                 <CardContent className="pt-4">
                     <form onSubmit={handleSubmit} className="space-y-5">
+
+                        {/* Honeypot Field (Invisible to users, visible to bots) */}
+                        <div className="opacity-0 absolute -z-10 h-0 w-0 overflow-hidden" aria-hidden="true">
+                            <label htmlFor="_fax">Fax Number</label>
+                            <input
+                                type="text"
+                                id="_fax"
+                                name="_fax"
+                                tabIndex={-1}
+                                autoComplete="off"
+                                value={honeypot}
+                                onChange={(e) => setHoneypot(e.target.value)}
+                            />
+                        </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                 E-mail
