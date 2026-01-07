@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { saveClient } from '@/app/actions';
 import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
-import InputMask from 'react-input-mask';
+import { useMask } from '@react-input/mask';
 
 export function NewClientDialog() {
     const [open, setOpen] = useState(false);
@@ -102,19 +102,13 @@ export function NewClientDialog() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="phone">Telefone / WhatsApp</Label>
-                        <InputMask
-                            mask="(99) 99999-9999"
+                        <Input
+                            ref={useMask({ mask: '(__) _____-____', replacement: { _: /\d/ } })}
+                            id="phone"
                             value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        >
-                            {(inputProps: any) => (
-                                <Input
-                                    {...inputProps}
-                                    id="phone"
-                                    placeholder="(11) 99999-9999"
-                                />
-                            )}
-                        </InputMask>
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, phone: e.target.value })}
+                            placeholder="(11) 99999-9999"
+                        />
                     </div>
                     <DialogFooter className="pt-4">
                         <Button type="button" variant="outline" onClick={() => setOpen(false)}>

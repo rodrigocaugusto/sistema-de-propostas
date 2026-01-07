@@ -1,9 +1,27 @@
 
 import Stripe from 'stripe';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-    apiVersion: '2025-12-15.clover', // Updated to match type definition
-    typescript: true,
+let stripeInstance: Stripe | null = null;
+
+export const getStripe = (): Stripe => {
+    if (!stripeInstance) {
+        const key = process.env.STRIPE_SECRET_KEY;
+        if (!key) {
+            throw new Error('STRIPE_SECRET_KEY is not defined');
+        }
+        stripeInstance = new Stripe(key, {
+            apiVersion: '2025-12-15.clover',
+            typescript: true,
+        });
+    }
+    return stripeInstance;
+};
+
+// Keep backwards compatibility but use lazy initialization
+export const stripe = new Proxy({} as Stripe, {
+    get: (_, prop: keyof Stripe) => {
+        return getStripe()[prop];
+    }
 });
 
 export const getStripeConfig = () => {
