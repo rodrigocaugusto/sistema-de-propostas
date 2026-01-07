@@ -42,7 +42,7 @@ import {
 } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { sendProposalWebhook } from '@/lib/webhook';
-import { clearSession } from '@/lib/auth';
+import { clearSession, getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getUserByEmail, updateUserPassword, prisma } from '@/lib/db';
 import { sendPasswordResetEmail } from '@/lib/email';
@@ -106,6 +106,8 @@ export async function fetchCompany() {
 }
 
 export async function saveCompany(data: Company) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await updateCompany(data);
     revalidatePath('/');
     revalidatePath('/settings');
@@ -251,6 +253,8 @@ export async function fetchProducts() {
 }
 
 export async function saveProduct(data: Omit<Product, 'id'>) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await createProduct(data);
     revalidatePath('/products');
     revalidatePath('/proposals/new');
@@ -258,6 +262,8 @@ export async function saveProduct(data: Omit<Product, 'id'>) {
 }
 
 export async function editProduct(id: string, data: Omit<Product, 'id'>) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await updateProduct(id, data);
     revalidatePath('/products');
     revalidatePath('/proposals/new');
@@ -265,6 +271,8 @@ export async function editProduct(id: string, data: Omit<Product, 'id'>) {
 }
 
 export async function removeProduct(id: string) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await deleteProduct(id);
     revalidatePath('/products');
     revalidatePath('/proposals/new');
@@ -305,6 +313,8 @@ export async function fetchAllPaymentMethods() {
 }
 
 export async function savePaymentMethod(data: Omit<PaymentMethod, 'id'>) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await createPaymentMethod(data);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');
@@ -312,6 +322,8 @@ export async function savePaymentMethod(data: Omit<PaymentMethod, 'id'>) {
 }
 
 export async function editPaymentMethod(id: string, data: Omit<PaymentMethod, 'id'>) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await updatePaymentMethod(id, data);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');
@@ -319,6 +331,8 @@ export async function editPaymentMethod(id: string, data: Omit<PaymentMethod, 'i
 }
 
 export async function removePaymentMethod(id: string) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await deletePaymentMethod(id);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');
@@ -336,6 +350,8 @@ export async function fetchAllProposalNotes() {
 }
 
 export async function saveProposalNote(data: Omit<ProposalNoteTemplate, 'id'>) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await createProposalNote(data);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');
@@ -343,6 +359,8 @@ export async function saveProposalNote(data: Omit<ProposalNoteTemplate, 'id'>) {
 }
 
 export async function editProposalNote(id: string, data: Omit<ProposalNoteTemplate, 'id'>) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await updateProposalNote(id, data);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');
@@ -350,6 +368,8 @@ export async function editProposalNote(id: string, data: Omit<ProposalNoteTempla
 }
 
 export async function removeProposalNote(id: string) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await deleteProposalNote(id);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');
@@ -367,6 +387,8 @@ export async function fetchAllPaymentTermsTemplates() {
 }
 
 export async function savePaymentTermsTemplate(data: Omit<PaymentTermsTemplateData, 'id'>) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await createPaymentTermsTemplate(data);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');
@@ -374,6 +396,8 @@ export async function savePaymentTermsTemplate(data: Omit<PaymentTermsTemplateDa
 }
 
 export async function editPaymentTermsTemplate(id: string, data: Omit<PaymentTermsTemplateData, 'id'>) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await updatePaymentTermsTemplate(id, data);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');
@@ -381,6 +405,8 @@ export async function editPaymentTermsTemplate(id: string, data: Omit<PaymentTer
 }
 
 export async function removePaymentTermsTemplate(id: string) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
     const result = await deletePaymentTermsTemplate(id);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');

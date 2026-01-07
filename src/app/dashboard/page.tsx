@@ -5,7 +5,7 @@ import { fetchCompany, fetchProposals, logoutAction } from "@/app/actions";
 import { getSession } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Settings, FileText, CheckCircle, XCircle, Clock, Package, TrendingUp, TrendingDown, DollarSign, BarChart3, ArrowUpRight, Sparkles, Users, Pencil, User, LogOut, Shield } from "lucide-react";
+import { Plus, Settings, FileText, CheckCircle, XCircle, Clock, Package, TrendingUp, TrendingDown, DollarSign, BarChart3, ArrowUpRight, Sparkles, Users, Pencil, User, LogOut, Shield, ClipboardList } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ProposalListView } from "@/components/proposal-list-view";
 
@@ -58,11 +58,19 @@ export default async function Dashboard() {
                 </Button>
               </Link>
               <ThemeToggle />
+              {session?.role === 'admin' && (
+                <Link href="/audit">
+                  <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20">
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Auditoria
+                  </Button>
+                </Link>
+              )}
               {session?.isSuperAdmin && (
                 <Link href="/admin">
                   <Button variant="ghost" size="sm" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/20">
                     <Shield className="mr-2 h-4 w-4" />
-                    Admin
+                    Super Admin
                   </Button>
                 </Link>
               )}

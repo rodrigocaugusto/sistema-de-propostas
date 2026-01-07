@@ -9,8 +9,8 @@ import { redirect } from 'next/navigation';
 
 export async function createCheckoutSession(planId: string, interval: 'monthly' | 'annual') {
     const session = await getSession();
-    if (!session || !session.companyId) {
-        throw new Error("Unauthorized");
+    if (!session || !session.companyId || session.role !== 'admin') {
+        throw new Error("Acesso negado. Apenas administradores.");
     }
 
     const user = await prisma.user.findUnique({
@@ -67,8 +67,8 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
 
 export async function createCustomerPortalSession() {
     const session = await getSession();
-    if (!session || !session.companyId) {
-        throw new Error("Unauthorized");
+    if (!session || !session.companyId || session.role !== 'admin') {
+        throw new Error("Acesso negado. Apenas administradores.");
     }
 
     const company = await prisma.company.findUnique({
@@ -138,8 +138,8 @@ export async function getSubscriptionDetails() {
 // Get invoices for current company
 export async function getInvoices() {
     const session = await getSession();
-    if (!session || !session.companyId) {
-        throw new Error("Unauthorized");
+    if (!session || !session.companyId || session.role !== 'admin') {
+        throw new Error("Acesso negado. Apenas administradores.");
     }
 
     const company = await prisma.company.findUnique({
@@ -178,8 +178,8 @@ export async function getInvoices() {
 // Cancel current subscription
 export async function cancelSubscription() {
     const session = await getSession();
-    if (!session || !session.companyId) {
-        throw new Error("Unauthorized");
+    if (!session || !session.companyId || session.role !== 'admin') {
+        throw new Error("Acesso negado. Apenas administradores.");
     }
 
     const company = await prisma.company.findUnique({
@@ -207,8 +207,8 @@ export async function cancelSubscription() {
 // Reactivate subscription (if set to cancel at period end)
 export async function reactivateSubscription() {
     const session = await getSession();
-    if (!session || !session.companyId) {
-        throw new Error("Unauthorized");
+    if (!session || !session.companyId || session.role !== 'admin') {
+        throw new Error("Acesso negado. Apenas administradores.");
     }
 
     const company = await prisma.company.findUnique({

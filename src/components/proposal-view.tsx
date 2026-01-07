@@ -301,14 +301,14 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                         <Card className="bg-card/50 backdrop-blur-sm border-none shadow-lg">
                             <CardContent className="p-8 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
                                 <div className="flex-1">
-                                    <h3 className="text-lg font-semibold mb-2">Apresentado por {company.responsible}</h3>
+                                    <h3 className="text-lg font-semibold mb-2">Apresentado por {proposal.createdBy?.name || company.responsible}</h3>
                                     <p className="text-muted-foreground mb-4">
                                         Estamos muito felizes em apresentar esta solução para o seu negócio.
                                         Abaixo você encontrará o detalhamento dos serviços e produtos selecionados.
                                     </p>
                                     <div className="flex flex-wrap justify-center md:justify-start gap-4">
                                         <Button variant="outline" size="sm" asChild>
-                                            <a href={`mailto:${company.email}`}><Mail className="w-4 h-4 mr-2" /> {company.email}</a>
+                                            <a href={`mailto:${proposal.createdBy?.email || company.email}`}><Mail className="w-4 h-4 mr-2" /> {proposal.createdBy?.email || company.email}</a>
                                         </Button>
                                         <Button variant="outline" size="sm" asChild>
                                             <a href={`tel:${company.phone}`}><Phone className="w-4 h-4 mr-2" /> {company.phone}</a>

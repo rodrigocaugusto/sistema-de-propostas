@@ -64,6 +64,10 @@ export interface Proposal {
         totalBg?: string;
         notesBg?: string;
     } | null;
+    createdBy?: {
+        name: string;
+        email: string;
+    } | null;
 }
 
 export interface Client {
@@ -254,6 +258,7 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
     const created = await prisma.proposal.create({
         data: {
             companyId,
+            userId: session.id,
             proposalNumber: data.proposalNumber || null,
             clientName: data.clientName,
             clientCompany: data.clientCompany || null,
@@ -323,7 +328,12 @@ export async function getProposal(id: string) {
     // editing endpoints must verify ownership.
     const p = await prisma.proposal.findUnique({
         where: { id },
-        include: { items: true },
+        include: {
+            items: true,
+            createdBy: {
+                select: { name: true, email: true } // Fetch creator name
+            }
+        },
     });
 
     if (!p) return null;
