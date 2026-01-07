@@ -74,9 +74,32 @@ export async function fetchProposals() {
 export async function createNewProposal(data: Omit<Proposal, 'id' | 'createdAt' | 'status'>) {
     const result = await createProposal(data);
 
-    // Trigger Webhook
+    // Get full proposal with all data
     const fullProposal = await getProposal(result.id);
-    if (fullProposal) await sendProposalWebhook('created', fullProposal);
+
+    if (fullProposal) {
+        // Trigger Webhook
+        await sendProposalWebhook('created', fullProposal);
+
+        // Send email notification to client
+        try {
+            const company = await getCompany();
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
+            const proposalUrl = `${baseUrl}/p/${fullProposal.id}`;
+
+            const { sendProposalNotification } = await import('@/lib/email');
+            await sendProposalNotification(fullProposal.clientEmail, {
+                clientName: fullProposal.clientName,
+                companyName: company?.name || 'Empresa',
+                companyLogo: company?.logoUrl || null,
+                proposalUrl,
+            });
+            console.log(`Email sent to client for proposal ${fullProposal.id}`);
+        } catch (error) {
+            console.error('Failed to send proposal email:', error);
+            // Don't fail the action if email sending fails
+        }
+    }
 
     revalidatePath('/');
     revalidatePath('/clients');
@@ -99,31 +122,39 @@ export async function acceptProposal(id: string) {
     // Send acceptance confirmation email to the company
     try {
         const proposal = await getProposal(id);
-        const company = await getCompany();
 
-        if (proposal && company && company.email) {
-            const { sendAcceptanceConfirmation } = await import('@/lib/email');
-
-            // Build proposal URL
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
-            const proposalUrl = `${baseUrl}/p/${proposal.id}`;
-
-            await sendAcceptanceConfirmation(company.email, {
-                companyEmail: company.email,
-                companyName: company.name,
-                clientName: proposal.clientName,
-                clientEmail: proposal.clientEmail,
-                clientPhone: proposal.clientPhone,
-                clientCompany: proposal.clientCompany,
-                proposalNumber: proposal.proposalNumber,
-                proposalUrl,
-                totalOneTime: proposal.totalOneTime,
-                totalRecurring: proposal.totalRecurring
+        if (proposal) {
+            // Get company from proposal's companyId (works without session)
+            const { prisma } = await import('@/lib/db');
+            const company = await prisma.company.findUnique({
+                where: { id: (proposal as any).companyId }
             });
-        }
 
-        // Trigger Webhook
-        if (proposal) await sendProposalWebhook('accepted', proposal);
+            if (company && company.email) {
+                const { sendAcceptanceConfirmation } = await import('@/lib/email');
+
+                // Build proposal URL
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
+                const proposalUrl = `${baseUrl}/p/${proposal.id}`;
+
+                await sendAcceptanceConfirmation(company.email, {
+                    companyEmail: company.email,
+                    companyName: company.name,
+                    clientName: proposal.clientName,
+                    clientEmail: proposal.clientEmail,
+                    clientPhone: proposal.clientPhone,
+                    clientCompany: proposal.clientCompany,
+                    proposalNumber: proposal.proposalNumber,
+                    proposalUrl,
+                    totalOneTime: proposal.totalOneTime,
+                    totalRecurring: proposal.totalRecurring
+                });
+                console.log(`Acceptance email sent for proposal ${proposal.id}`);
+            }
+
+            // Trigger Webhook
+            await sendProposalWebhook('accepted', proposal);
+        }
 
     } catch (error) {
         console.error('Failed to send acceptance email:', error);
