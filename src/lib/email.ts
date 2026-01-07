@@ -448,7 +448,7 @@ export async function sendPasswordResetEmail(to: string, data: {
 
 // Template: Alerta para o Admin do Sistema
 export function getAdminAlertTemplate(data: {
-    type: 'new_subscription' | 'new_user_company';
+    type: 'new_subscription' | 'new_user_company' | 'new_trial_user';
     title: string;
     details: Record<string, string>;
 }) {
@@ -487,7 +487,7 @@ export function getAdminAlertTemplate(data: {
     };
 }
 
-export async function sendAdminNotification(type: 'new_subscription' | 'new_user_company', data: {
+export async function sendAdminNotification(type: 'new_subscription' | 'new_user_company' | 'new_trial_user', data: {
     title: string;
     details: Record<string, string>;
 }) {
