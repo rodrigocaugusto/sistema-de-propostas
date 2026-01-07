@@ -44,6 +44,51 @@ import { revalidatePath } from 'next/cache';
 import { sendProposalWebhook } from '@/lib/webhook';
 import { clearSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { getUserByEmail, updateUserPassword, prisma } from '@/lib/db';
+import { sendPasswordResetEmail } from '@/lib/email';
+import { hash } from 'bcryptjs';
+
+function generateStrongPassword() {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let retVal = "";
+    for (let i = 0, n = charset.length; i < length; ++i) {
+        retVal += charset.charAt(Math.floor(Math.random() * n));
+    }
+    return retVal;
+}
+
+export async function requestPasswordReset(email: string) {
+    try {
+        const user = await getUserByEmail(email);
+
+        // Security: Always return success to prevent email enumeration
+        if (!user) {
+            return { success: true, message: "Se o email estiver cadastrado, uma nova senha será enviada." };
+        }
+
+        const newPassword = generateStrongPassword();
+        const hashedPassword = await hash(newPassword, 10);
+
+        await updateUserPassword(user.id, hashedPassword);
+
+        let company = null;
+        if (user.companyId) {
+            company = await prisma.company.findUnique({ where: { id: user.companyId } });
+        }
+
+        await sendPasswordResetEmail(user.email, {
+            userName: user.name || 'Usuário',
+            newPassword: newPassword,
+            companyName: company?.name || 'Sistema de Propostas'
+        });
+
+        return { success: true, message: "Nova senha enviada para seu email." };
+    } catch (error) {
+        console.error("Reset password error:", error);
+        return { success: false, error: "Erro ao processar solicitação." };
+    }
+}
 
 export async function logoutAction() {
     await clearSession();

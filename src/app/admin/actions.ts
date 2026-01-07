@@ -362,3 +362,61 @@ export async function getAdminStats() {
         return null;
     }
 }
+
+export async function adminGeneratePasswordForUser() {
+    await checkSuperAdmin();
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return { password };
+}
+
+export async function adminResetUserPassword(companyId: string, newPassword: string) {
+    await checkSuperAdmin();
+    try {
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            include: { users: { where: { role: 'admin' }, take: 1 } }
+        });
+
+        if (!company || company.users.length === 0) {
+            // Fallback: try any user
+            const anyUser = await prisma.user.findFirst({ where: { companyId } });
+            if (!anyUser) return { success: false, error: "Nenhum usuário encontrado." };
+
+            // Use this user
+            const hashedPassword = await hashPassword(newPassword);
+            await prisma.user.update({
+                where: { id: anyUser.id },
+                data: { password: hashedPassword }
+            });
+            await import('@/lib/email').then(mod => mod.sendPasswordResetEmail(anyUser.email, {
+                userName: anyUser.name || 'Usuário',
+                newPassword,
+                companyName: company?.name || 'Sistema de Propostas'
+            }));
+            return { success: true, message: `Senha resetada para ${anyUser.email}` };
+        }
+
+        const user = company.users[0];
+        const hashedPassword = await hashPassword(newPassword);
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { password: hashedPassword }
+        });
+
+        await import('@/lib/email').then(mod => mod.sendPasswordResetEmail(user.email, {
+            userName: user.name || 'Admin',
+            newPassword,
+            companyName: company.name
+        }));
+
+        return { success: true, message: `Senha resetada para ${user.email}` };
+    } catch (err: any) {
+        console.error("Reset error:", err);
+        return { success: false, error: err.message || "Erro ao resetar senha." };
+    }
+}

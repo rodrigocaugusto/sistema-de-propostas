@@ -841,3 +841,16 @@ export async function deletePaymentTermsTemplate(id: string) {
 
     return await prisma.paymentTermsTemplate.delete({ where: { id } });
 }
+
+export async function getUserByEmail(email: string) {
+    return await prisma.user.findUnique({
+        where: { email }
+    });
+}
+
+export async function updateUserPassword(userId: string, passwordHash: string) {
+    return await prisma.user.update({
+        where: { id: userId },
+        data: { password: passwordHash }
+    });
+}

@@ -391,3 +391,57 @@ export async function sendAcceptanceConfirmation(
     // We can also send a carbon copy to the proposal creator if different, for now to is the company email
     return emailToCompany;
 }
+
+// Template: Recuperação de Senha
+export function getPasswordResetTemplate(data: {
+    userName: string;
+    newPassword: string;
+    companyName: string;
+    loginUrl: string;
+}) {
+    return {
+        subject: `Sua nova senha de acesso - ${data.companyName}`,
+        html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; background-color: #f4f4f5; padding: 40px 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h1 style="color: #18181b; margin-top: 0;">Nova Senha Gerada</h1>
+        <p style="color: #52525b; font-size: 16px;">Olá <strong>${data.userName}</strong>,</p>
+        <p style="color: #52525b; font-size: 16px;">Uma nova senha forte foi gerada para o seu acesso ao sistema <strong>${data.companyName}</strong>.</p>
+        
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 30px 0; text-align: center;">
+            <p style="margin: 0; color: #166534; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Sua Nova Senha</p>
+            <p style="margin: 10px 0 0; color: #15803d; font-size: 32px; font-family: monospace; font-weight: bold; letter-spacing: 2px;">${data.newPassword}</p>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 30px;">
+            <a href="${data.loginUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">Acessar o Sistema</a>
+        </div>
+
+        <p style="color: #71717a; font-size: 14px; border-top: 1px solid #e4e4e7; padding-top: 20px; margin-top: 20px;">
+            Recomendamos que você altere esta senha após o primeiro login por questões de segurança.
+        </p>
+    </div>
+</body>
+</html>
+        `,
+        text: `Olá ${data.userName},\n\nSua nova senha de acesso é: ${data.newPassword}\n\nAcesse em: ${data.loginUrl}`
+    };
+}
+
+export async function sendPasswordResetEmail(to: string, data: {
+    userName: string;
+    newPassword: string;
+    companyName: string;
+}) {
+    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br'}/login`;
+    const template = getPasswordResetTemplate({ ...data, loginUrl });
+
+    return await sendEmail({
+        to,
+        subject: template.subject,
+        html: template.html,
+        text: template.text
+    });
+}

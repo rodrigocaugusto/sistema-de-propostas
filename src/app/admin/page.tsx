@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription, updateCompany, getCompanyInvoices, getAdminStats } from './actions';
+import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription, updateCompany, getCompanyInvoices, getAdminStats, adminGeneratePasswordForUser, adminResetUserPassword } from './actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw, Edit, DollarSign, TrendingUp, Receipt, Download, ExternalLink, Eye } from 'lucide-react';
+import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw, Edit, DollarSign, TrendingUp, Receipt, Download, ExternalLink, Eye, Key, AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/app/auth/actions';
 import { useRouter } from 'next/navigation';
@@ -64,6 +64,13 @@ export default function AdminDashboard() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isInvoicesOpen, setIsInvoicesOpen] = useState(false);
+
+    // Reset Password State
+    const [isResetOpen, setIsResetOpen] = useState(false);
+    const [resetGeneratedPassword, setResetGeneratedPassword] = useState('');
+    const [isGeneratingPassword, setIsGeneratingPassword] = useState(false);
+    const [isConfirmingReset, setIsConfirmingReset] = useState(false);
+
     const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loadingInvoices, setLoadingInvoices] = useState(false);
@@ -224,6 +231,43 @@ export default function AdminDashboard() {
             setLoadingInvoices(false);
         }
     };
+
+    // Password Reset Functions
+    const openResetDialog = async (company: Company) => {
+        setSelectedCompany(company);
+        setIsResetOpen(true);
+        setResetGeneratedPassword('');
+        setIsGeneratingPassword(true);
+
+        try {
+            const res = await adminGeneratePasswordForUser();
+            setResetGeneratedPassword(res.password);
+        } catch (e) {
+            toast.error("Erro ao gerar senha");
+        } finally {
+            setIsGeneratingPassword(false);
+        }
+    };
+
+    const handleConfirmReset = async () => {
+        if (!selectedCompany || !resetGeneratedPassword) return;
+
+        setIsConfirmingReset(true);
+        try {
+            const res = await adminResetUserPassword(selectedCompany.id, resetGeneratedPassword);
+            if (res.success) {
+                toast.success(res.message);
+                setIsResetOpen(false);
+            } else {
+                toast.error(res.error);
+            }
+        } catch {
+            toast.error("Erro ao resetar senha");
+        } finally {
+            setIsConfirmingReset(false);
+        }
+    };
+
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -514,6 +558,53 @@ export default function AdminDashboard() {
                     </DialogContent>
                 </Dialog>
 
+                {/* Password Reset Dialog */}
+                <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Key className="h-5 w-5 text-amber-500" /> Resetar Senha Admin
+                            </DialogTitle>
+                            <DialogDescription>
+                                Uma nova senha forte será gerada para o admin desta empresa.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="py-4 space-y-4">
+                            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg text-center border-2 border-dashed border-slate-300 dark:border-slate-700">
+                                {isGeneratingPassword ? (
+                                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-500" />
+                                ) : (
+                                    <>
+                                        <p className="text-xs text-slate-500 uppercase font-semibold mb-1">Nova Senha Gerada</p>
+                                        <p className="text-3xl font-mono font-bold tracking-wider text-slate-900 dark:text-white select-all">
+                                            {resetGeneratedPassword}
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg p-3 flex items-start gap-3">
+                                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm text-amber-800 dark:text-amber-400 font-medium">Confirmação Necessária</p>
+                                    <p className="text-xs text-amber-700 dark:text-amber-500 mt-1">
+                                        Ao confirmar, a senha atual será substituída e a nova senha será enviada por e-mail para o administrador.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsResetOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleConfirmReset} disabled={isConfirmingReset || isGeneratingPassword} className="bg-amber-600 hover:bg-amber-700 text-white">
+                                {isConfirmingReset && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Confirmar e Enviar
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
                 {/* Invoices Dialog */}
                 <Dialog open={isInvoicesOpen} onOpenChange={setIsInvoicesOpen}>
                     <DialogContent className="sm:max-w-[600px]">
@@ -641,6 +732,15 @@ export default function AdminDashboard() {
                                                     title="Editar"
                                                 >
                                                     <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => openResetDialog(company)}
+                                                    className="text-amber-500 hover:text-amber-600 hover:bg-amber-50"
+                                                    title="Resetar Senha"
+                                                >
+                                                    <Key className="h-4 w-4" />
                                                 </Button>
                                                 {company.stripeCustomerId && (
                                                     <Button

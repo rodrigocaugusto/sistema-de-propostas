@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { login } from '@/app/auth/actions';
+import { requestPasswordReset } from '@/app/actions';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Loader2, Lock, Mail, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, Sparkles, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface CompanyData {
     name: string;
@@ -22,6 +24,11 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [company, setCompany] = useState<CompanyData | null>(null);
+
+    // Forgot Password State
+    const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [isRecovering, setIsRecovering] = useState(false);
 
     useEffect(() => {
         // Clear any previous state if needed
@@ -51,6 +58,29 @@ export default function LoginPage() {
             toast.error('Erro ao fazer login. Tente novamente.');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleRecoverPassword = async () => {
+        if (!forgotEmail) {
+            toast.error("Digite seu e-mail.");
+            return;
+        }
+
+        setIsRecovering(true);
+        try {
+            const result = await requestPasswordReset(forgotEmail);
+            if (result.success) {
+                toast.success(result.message);
+                setIsForgotPasswordOpen(false);
+                setForgotEmail('');
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao solicitar recuperação.");
+        } finally {
+            setIsRecovering(false);
         }
     };
 
@@ -138,10 +168,49 @@ export default function LoginPage() {
                         </Button>
                     </form>
 
-                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-                            Esqueceu sua senha? Entre em contato com o administrador.
-                        </p>
+                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-center">
+                        <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="link" className="text-sm text-slate-500 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400">
+                                    Esqueceu sua senha?
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle>Recuperação de Senha</DialogTitle>
+                                    <DialogDescription>
+                                        Uma nova senha segura será gerada e enviada para o seu e-mail cadastrado.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <div className="py-4 space-y-4">
+                                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg p-3 flex items-start gap-3">
+                                        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-sm text-amber-800 dark:text-amber-400">
+                                            Atenção: Ao confirmar esta ação, sua senha atual será imediatamente invalidada.
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="forgot-email">E-mail Cadastrado</Label>
+                                        <Input
+                                            id="forgot-email"
+                                            value={forgotEmail}
+                                            onChange={(e) => setForgotEmail(e.target.value)}
+                                            placeholder="exemplo@email.com"
+                                        />
+                                    </div>
+                                </div>
+
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setIsForgotPasswordOpen(false)}>Cancelar</Button>
+                                    <Button onClick={handleRecoverPassword} disabled={isRecovering}>
+                                        {isRecovering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Gerar Nova Senha
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </CardContent>
             </Card>
