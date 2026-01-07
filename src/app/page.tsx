@@ -1,23 +1,35 @@
-
 'use client';
 
 import { useState } from 'react';
-import { PLANS, PlanId } from '@/lib/plans';
+import { PLANS } from '@/lib/plans';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Check, LogIn, ArrowRight, Zap, Layout, BarChart3, Users } from 'lucide-react';
+import { Check, LogIn, ArrowRight, Zap, Clock, Target, CreditCard, Bell, Link2, ChevronDown, Mail, MessageSquare, BarChart3, FileText, Users, Shield, Palette, Code, Briefcase, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function HomePage() {
     const [isAnnual, setIsAnnual] = useState(false);
+    const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     const plansToShow = Object.values(PLANS).filter(p => p.id !== 'trial');
 
+    const faqs = [
+        { q: "Como funciona o teste grátis?", a: "Você tem 7 dias para testar todas as funcionalidades sem pagar nada. Não pedimos cartão de crédito no cadastro. Depois do teste, escolhe se quer continuar e qual plano faz mais sentido." },
+        { q: "E se eu ultrapassar o limite de propostas do meu plano?", a: "Sem estresse. O sistema avisa quando você está perto do limite. Se ultrapassar, você pode fazer upgrade para o próximo plano ou esperar o mês seguinte. Não bloqueamos seu acesso." },
+        { q: "Posso cancelar quando quiser?", a: "Sim. Não tem contrato nem fidelidade. Cancela direto no painel com 2 cliques. Você continua usando até o final do período que já pagou." },
+        { q: "Como funciona o aceite da proposta?", a: "Você envia a proposta com um link único. O cliente abre, revisa e clica em \"Aceitar Proposta\". Nesse momento você recebe uma notificação e pode partir para o contrato formal. O aceite fica registrado com data e hora no sistema." },
+        { q: "Preciso assinar contrato depois que o cliente aceita?", a: "Sim. O aceite da proposta é o \"sim\" do cliente confirmando interesse e valores. Depois você envia o contrato formal para assinatura digital (usando a ferramenta que preferir: Clicksign, Docusign, etc.)." },
+        { q: "As integrações via webhook são difíceis de configurar?", a: "Depende do seu conhecimento técnico. Se você já usa n8n, Make ou Zapier, é tranquilo. Se nunca mexeu, oferecemos tutoriais e suporte para ajudar na primeira configuração." },
+        { q: "Vocês aceitam PIX?", a: "No momento só cartão de crédito (via Stripe). PIX está no roadmap para breve." },
+        { q: "Meus dados ficam seguros?", a: "Sim. Usamos criptografia SSL, backups diários automáticos e servidores seguros. Seus dados são seus e você pode exportar tudo quando quiser." },
+        { q: "Posso personalizar os templates com minha marca?", a: "Sim. Você adiciona seu logo, escolhe suas cores, ajusta textos e salva como template personalizado." },
+    ];
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans">
-            {/* Header / Nav */}
+            {/* Header */}
             <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
                 <div className="container mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -28,126 +40,273 @@ export default function HomePage() {
                             Propostas.ai
                         </span>
                     </div>
-                    <Link href="/login">
-                        <Button variant="ghost" className="gap-2 font-medium hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20">
-                            <LogIn className="h-4 w-4" /> Entrar
-                        </Button>
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <Link href="#pricing" className="hidden sm:block text-sm font-medium text-slate-600 hover:text-violet-600">Preços</Link>
+                        <Link href="#faq" className="hidden sm:block text-sm font-medium text-slate-600 hover:text-violet-600">FAQ</Link>
+                        <Link href="/login">
+                            <Button variant="ghost" className="gap-2 font-medium hover:text-violet-600">
+                                <LogIn className="h-4 w-4" /> Entrar
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
             </header>
 
             <main className="flex-1">
-                {/* Hero Section */}
-                <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-32">
-                    <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-200/20 via-slate-50/50 to-slate-50 dark:from-violet-900/20 dark:via-slate-950/50 dark:to-slate-950"></div>
-                    <div className="container max-w-6xl mx-auto px-6 text-center">
-                        <div className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-sm font-medium text-violet-800 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300 mb-8 backdrop-blur-sm">
-                            <span className="flex h-2 w-2 rounded-full bg-violet-600 mr-2 animate-pulse"></span>
-                            Novidade: Integração com Stripe
+                {/* HERO SECTION */}
+                <section className="relative overflow-hidden pt-20 pb-24 lg:pt-32 lg:pb-40">
+                    <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-200/30 via-slate-50/50 to-slate-50 dark:from-violet-900/20 dark:via-slate-950/50 dark:to-slate-950"></div>
+                    <div className="container max-w-5xl mx-auto px-6 text-center">
+                        <div className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-4 py-1.5 text-sm font-medium text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300 mb-8">
+                            <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                            7 dias grátis • Sem cartão de crédito
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-8 leading-tight">
-                            Crie Propostas Pro <br />
-                            <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                Feche Mais Negócios
-                            </span>
+
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6 leading-[1.1]">
+                            Da Cotação ao <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">&quot;SIM&quot;</span> do Cliente<br />em Menos de <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">60 Segundos</span>
                         </h1>
-                        <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-                            A plataforma completa para agências, freelancers e consultores criarem, enviarem e rastrearem propostas comerciais incríveis em segundos.
+
+                        <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed">
+                            O único sistema de propostas que você realmente precisa: crie propostas profissionais em menos de 1 minuto, acompanhe cada negociação em tempo real e automatize todo seu pipeline comercial com integrações poderosas.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
                             <Link href="/login">
                                 <Button size="lg" className="h-14 px-8 text-lg rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-xl shadow-violet-500/25 hover:shadow-violet-500/40 transition-all hover:-translate-y-1">
                                     Começar Grátis Agora <ArrowRight className="ml-2 h-5 w-5" />
                                 </Button>
                             </Link>
-                            <Link href="#pricing">
-                                <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
-                                    Ver Planos
-                                </Button>
-                            </Link>
+                            <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full border-slate-300 gap-2">
+                                <Play className="h-5 w-5" /> Ver Demo (45 seg)
+                            </Button>
                         </div>
 
                         {/* Social Proof */}
-                        <div className="mt-20 pt-10 border-t border-slate-200 dark:border-slate-800/50">
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6">CONFIADO POR TIMES INOVADORES</p>
-                            <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-                                {/* Placeholders for logos - using text for now but styled properly */}
-                                <span className="text-xl font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2"><Zap className="h-5 w-5" /> Acme Corp</span>
-                                <span className="text-xl font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2"><Layout className="h-5 w-5" /> Designify</span>
-                                <span className="text-xl font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2"><BarChart3 className="h-5 w-5" /> MetricsInc</span>
-                                <span className="text-xl font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2"><Users className="h-5 w-5" /> TeamFlow</span>
-                            </div>
+                        <div className="flex flex-wrap justify-center gap-6 text-sm text-slate-600 dark:text-slate-400">
+                            <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Propostas em média de 47 segundos</div>
+                            <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Pipeline 100% organizado</div>
+                            <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> 5.000+ integrações via webhook</div>
                         </div>
                     </div>
                 </section>
 
-                {/* Features Section */}
-                <section className="py-24 bg-white dark:bg-slate-900">
-                    <div className="container max-w-6xl mx-auto px-6">
-                        <div className="text-center max-w-3xl mx-auto mb-16">
-                            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">Tudo que você precisa para vender melhor</h2>
-                            <p className="text-lg text-slate-600 dark:text-slate-400">
-                                Deixe de lado planilhas e PDFs estáticos. Use uma ferramenta viva que ajuda você a converter leads em clientes.
-                            </p>
+                {/* DOR/PROBLEMA SECTION */}
+                <section className="py-24 bg-slate-900 dark:bg-slate-950 text-white relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-red-900/20 to-transparent"></div>
+                    <div className="container max-w-4xl mx-auto px-6 relative">
+                        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+                            Você está <span className="text-red-400">perdendo vendas</span> por causa das suas propostas lentas
+                        </h2>
+                        <p className="text-lg text-slate-400 text-center mb-16">Seja sincero: quantas vezes você...</p>
+
+                        <div className="space-y-8">
+                            {[
+                                { emoji: "😰", title: "Levou horas para montar uma proposta que deveria levar minutos?", desc: "Enquanto você formata tabelas no Word e ajusta preços na calculadora, seu concorrente já enviou 3 propostas e recebeu 2 aceites." },
+                                { emoji: "🤯", title: "Perdeu o controle de quais propostas estão abertas?", desc: "Planilhas desorganizadas, e-mails perdidos, follow-ups esquecidos. Você não sabe quanto tem no pipeline nem quem está prestes a fechar." },
+                                { emoji: "📉", title: "Criou uma proposta nova do zero para cada tipo de precificação?", desc: "Cliente A quer pagamento único, Cliente B quer mensalidade, Cliente C quer planos. Você refaz tudo manualmente toda vez." },
+                                { emoji: "😵", title: "Enviou a proposta e ficou no vácuo?", desc: "Aquela angústia clássica: \"Será que ele viu? Será que gostou? Já posso ligar ou vou parecer desesperado?\"" },
+                                { emoji: "🔗", title: "Teve que copiar dados manualmente entre suas ferramentas?", desc: "Proposta aceita aqui, tem que atualizar no CRM ali, avisar no Slack acolá, criar tarefa no Trello..." },
+                            ].map((item, i) => (
+                                <div key={i} className="flex gap-4 p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-red-500/30 transition-colors">
+                                    <span className="text-3xl">{item.emoji}</span>
+                                    <div>
+                                        <h3 className="font-bold text-lg mb-2">{item.title}</h3>
+                                        <p className="text-slate-400">{item.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
-                        <div className="grid md:grid-cols-3 gap-8">
+                        <div className="mt-16 p-8 rounded-2xl bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 text-center">
+                            <p className="text-xl font-medium">
+                                <strong>A cada proposta mal feita e demorada, você não está apenas perdendo um cliente.</strong><br />
+                                <span className="text-slate-400">Está perdendo momentum, deixando dinheiro na mesa e dando vantagem para concorrentes mais ágeis.</span>
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* SOLUÇÃO/TRANSFORMAÇÃO SECTION */}
+                <section className="py-24 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+                    <div className="container max-w-5xl mx-auto px-6">
+                        <div className="text-center mb-16">
+                            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-6">
+                                E se você pudesse criar propostas profissionais em <span className="text-violet-600">47 segundos</span> e saber na hora quando o cliente aceita?
+                            </h2>
+                            <div className="max-w-2xl mx-auto p-6 rounded-2xl bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
+                                <p className="text-left text-slate-700 dark:text-slate-300 space-y-2">
+                                    <span className="block"><strong>14h00</strong> → Lead quente pede proposta</span>
+                                    <span className="block"><strong>14h01</strong> → Você cria e envia (com template pronto)</span>
+                                    <span className="block"><strong>14h15</strong> → Notificação: &quot;Cliente aceitou sua proposta&quot;</span>
+                                    <span className="block"><strong>14h20</strong> → Webhook dispara e atualiza seu CRM</span>
+                                    <span className="block"><strong>14h30</strong> → Você liga para fechar os detalhes</span>
+                                </p>
+                                <p className="mt-4 font-bold text-violet-700 dark:text-violet-300">Não é ficção. É o Propostas.ai trabalhando para você.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {[
-                                {
-                                    icon: <Layout className="h-6 w-6 text-violet-600" />,
-                                    title: "Editor Intuitivo",
-                                    desc: "Crie propostas visuais com nosso editor drag-and-drop. Adicione seções, tabelas e imagens facilmente."
-                                },
-                                {
-                                    icon: <Zap className="h-6 w-6 text-violet-600" />,
-                                    title: "Geração Rápida",
-                                    desc: "Use templates e variáveis para gerar propostas personalizadas em segundos, não horas."
-                                },
-                                {
-                                    icon: <BarChart3 className="h-6 w-6 text-violet-600" />,
-                                    title: "Analytics em Tempo Real",
-                                    desc: "Saiba quando seu cliente abriu a proposta, quanto tempo leu e clique para fechar na hora certa."
-                                }
-                            ].map((feature, i) => (
-                                <div key={i} className="p-8 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-violet-200 dark:hover:border-violet-900 transition-colors group">
-                                    <div className="h-12 w-12 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                        {feature.icon}
+                                { icon: <Clock className="h-6 w-6" />, title: "Velocidade Brutal", desc: "60 segundos da ideia ao envio. Com templates inteligentes, você cria propostas em menos de 1 minuto.", color: "violet" },
+                                { icon: <Target className="h-6 w-6" />, title: "Controle Total do Pipeline", desc: "Veja em tempo real: quantas propostas enviadas, em negociação, fechadas e quanto dinheiro em jogo.", color: "blue" },
+                                { icon: <CreditCard className="h-6 w-6" />, title: "Precificação Flexível", desc: "Pagamento único, recorrência mensal/anual ou múltiplos planos. Tudo na mesma proposta, sem retrabalho.", color: "green" },
+                                { icon: <Bell className="h-6 w-6" />, title: "Aceite Instantâneo", desc: "Cliente aceita com um clique e você é notificado na hora. Acabou a ansiedade de esperar resposta.", color: "amber" },
+                                { icon: <Link2 className="h-6 w-6" />, title: "Automação com Webhooks", desc: "Conecte com n8n, Make, Zapier. Quando proposta é aceita, tudo acontece automaticamente.", color: "pink" },
+                                { icon: <BarChart3 className="h-6 w-6" />, title: "Dashboard Completo", desc: "Todas as métricas que você precisa para tomar decisões baseadas em dados reais.", color: "cyan" },
+                            ].map((item, i) => (
+                                <div key={i} className={`p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all hover:-translate-y-1`}>
+                                    <div className={`h-12 w-12 rounded-xl bg-${item.color}-100 dark:bg-${item.color}-900/30 flex items-center justify-center mb-4 text-${item.color}-600`}>
+                                        {item.icon}
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">{feature.title}</h3>
-                                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                                        {feature.desc}
-                                    </p>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{item.title}</h3>
+                                    <p className="text-slate-600 dark:text-slate-400 text-sm">{item.desc}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
                 </section>
 
-                {/* Pricing Section */}
-                <section id="pricing" className="py-24 bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
-                    {/* Background decoration */}
+                {/* RECURSOS DETALHADOS */}
+                <section className="py-24 bg-white dark:bg-slate-900">
+                    <div className="container max-w-5xl mx-auto px-6">
+                        <div className="text-center mb-16">
+                            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">Cada recurso foi pensado para uma coisa:</h2>
+                            <p className="text-xl text-violet-600 font-semibold">fazer você vender mais rápido</p>
+                        </div>
+
+                        {/* Recurso 1 */}
+                        <div className="mb-20 grid lg:grid-cols-2 gap-12 items-center">
+                            <div>
+                                <div className="inline-flex items-center gap-2 text-violet-600 font-semibold mb-4">
+                                    <Zap className="h-5 w-5" /> RECURSO 1
+                                </div>
+                                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-4">Do zero ao envio enquanto seu café esfria</h3>
+                                <p className="text-slate-600 dark:text-slate-400 mb-6">Templates pré-prontos + Editor intuitivo = Proposta profissional em menos de 60 segundos.</p>
+                                <ol className="space-y-3 text-slate-700 dark:text-slate-300">
+                                    <li className="flex gap-3"><span className="h-6 w-6 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-600 flex items-center justify-center text-sm font-bold">1</span> Escolha um template do seu nicho</li>
+                                    <li className="flex gap-3"><span className="h-6 w-6 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-600 flex items-center justify-center text-sm font-bold">2</span> Preencha os campos principais</li>
+                                    <li className="flex gap-3"><span className="h-6 w-6 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-600 flex items-center justify-center text-sm font-bold">3</span> Ajuste com o editor visual</li>
+                                    <li className="flex gap-3"><span className="h-6 w-6 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-600 flex items-center justify-center text-sm font-bold">4</span> Clique em &quot;Enviar&quot;</li>
+                                </ol>
+                                <p className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl text-green-700 dark:text-green-300 text-sm">
+                                    <strong>Resultado:</strong> Se você envia 20 propostas/mês e cada uma levava 2 horas, você economiza 39 horas por mês. São quase 5 dias úteis de volta!
+                                </p>
+                            </div>
+                            <div className="bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 rounded-3xl p-8 aspect-video flex items-center justify-center">
+                                <div className="text-center">
+                                    <Clock className="h-16 w-16 text-violet-500 mx-auto mb-4" />
+                                    <p className="text-6xl font-bold text-violet-600">47s</p>
+                                    <p className="text-slate-600 dark:text-slate-400">tempo médio de criação</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recurso 2 - Aceite */}
+                        <div className="mb-20 grid lg:grid-cols-2 gap-12 items-center">
+                            <div className="order-2 lg:order-1 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-3xl p-8 aspect-video flex items-center justify-center">
+                                <div className="text-center">
+                                    <Bell className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                                    <p className="text-2xl font-bold text-green-600">&quot;Cliente aceitou sua proposta!&quot;</p>
+                                    <p className="text-slate-600 dark:text-slate-400 mt-2">Notificação em tempo real</p>
+                                </div>
+                            </div>
+                            <div className="order-1 lg:order-2">
+                                <div className="inline-flex items-center gap-2 text-green-600 font-semibold mb-4">
+                                    <Check className="h-5 w-5" /> RECURSO 2
+                                </div>
+                                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-4">Do &quot;eu quero&quot; para o contrato em segundos</h3>
+                                <p className="text-slate-600 dark:text-slate-400 mb-6">Botão de aceite direto na proposta. Cliente clica, você é notificado, negócio avança.</p>
+                                <ul className="space-y-4">
+                                    <li className="flex gap-3 items-start"><Check className="h-5 w-5 text-green-500 mt-0.5" /> <span><strong>Menos fricção:</strong> cliente não precisa responder e-mail</span></li>
+                                    <li className="flex gap-3 items-start"><Check className="h-5 w-5 text-green-500 mt-0.5" /> <span><strong>Clareza total:</strong> você sabe exatamente quando tem um &quot;sim&quot;</span></li>
+                                    <li className="flex gap-3 items-start"><Check className="h-5 w-5 text-green-500 mt-0.5" /> <span><strong>Agilidade:</strong> do aceite ao contrato em minutos, não dias</span></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Recurso 3 - Webhooks */}
+                        <div className="grid lg:grid-cols-2 gap-12 items-center">
+                            <div>
+                                <div className="inline-flex items-center gap-2 text-blue-600 font-semibold mb-4">
+                                    <Link2 className="h-5 w-5" /> RECURSO 3
+                                </div>
+                                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-4">Conecte com tudo. Automatize tudo.</h3>
+                                <p className="text-slate-600 dark:text-slate-400 mb-6">Webhooks poderosos que disparam ações em qualquer ferramenta quando a proposta é aceita.</p>
+                                <div className="grid grid-cols-2 gap-3 mb-6">
+                                    {["n8n", "Make", "Zapier", "Qualquer API"].map((tool, i) => (
+                                        <div key={i} className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-center text-sm font-medium">{tool}</div>
+                                    ))}
+                                </div>
+                                <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                                    <p>🎯 Atualiza CRM automaticamente</p>
+                                    <p>💬 Envia mensagem no Slack</p>
+                                    <p>✅ Cria projeto no Asana/Trello</p>
+                                    <p>📧 Dispara e-mail de boas-vindas</p>
+                                    <p>💰 Atualiza sistema financeiro</p>
+                                </div>
+                            </div>
+                            <div className="bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-3xl p-8 aspect-video flex items-center justify-center">
+                                <div className="text-center">
+                                    <Link2 className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+                                    <p className="text-4xl font-bold text-blue-600">5.000+</p>
+                                    <p className="text-slate-600 dark:text-slate-400">apps compatíveis</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* TEMPLATES SECTION */}
+                <section className="py-24 bg-slate-50 dark:bg-slate-950">
+                    <div className="container max-w-5xl mx-auto px-6">
+                        <div className="text-center mb-16">
+                            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">Comece do 80% pronto. Sempre.</h2>
+                            <p className="text-lg text-slate-600 dark:text-slate-400">Templates baseados nas melhores práticas. Você só personaliza e envia.</p>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                            {[
+                                { icon: <MessageSquare className="h-6 w-6" />, title: "Marketing Digital", items: ["Gestão de Redes", "Tráfego Pago", "SEO", "Inbound"] },
+                                { icon: <Code className="h-6 w-6" />, title: "Tecnologia", items: ["Website", "App Mobile", "Sistema Web", "Suporte"] },
+                                { icon: <Palette className="h-6 w-6" />, title: "Design", items: ["Identidade Visual", "UI/UX", "Motion", "Gráficos"] },
+                                { icon: <Briefcase className="h-6 w-6" />, title: "Consultoria", items: ["Empresarial", "Treinamentos", "Jurídica", "Contábil"] },
+                            ].map((cat, i) => (
+                                <div key={i} className="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                    <div className="h-12 w-12 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 mb-4">{cat.icon}</div>
+                                    <h3 className="font-bold text-slate-900 dark:text-white mb-3">{cat.title}</h3>
+                                    <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                                        {cat.items.map((item, j) => <li key={j}>• {item}</li>)}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Estrutura otimizada para conversão</span>
+                            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Layout visual moderno</span>
+                            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Campos dinâmicos</span>
+                            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Aceite configurado</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* PRICING SECTION */}
+                <section id="pricing" className="py-24 bg-white dark:bg-slate-900 relative overflow-hidden">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
-                        <div className="absolute top-40 right-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen animate-blob"></div>
-                        <div className="absolute bottom-40 left-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-2000"></div>
+                        <div className="absolute top-40 right-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl"></div>
+                        <div className="absolute bottom-40 left-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl"></div>
                     </div>
 
                     <div className="container max-w-6xl mx-auto px-6 relative">
                         <div className="text-center space-y-4 mb-16">
-                            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Planos Flexíveis</h2>
-                            <p className="text-lg text-slate-600 dark:text-slate-400">Escolha o plano ideal para escalar sua operação.</p>
+                            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Escolha o plano ideal para o seu volume</h2>
+                            <p className="text-lg text-slate-600 dark:text-slate-400">Sem pegadinhas. Sem taxas escondidas. Cancele quando quiser.</p>
 
                             <div className="flex items-center justify-center gap-4 pt-6">
-                                <span className={cn("text-sm font-medium transition-colors", !isAnnual ? "text-slate-900 dark:text-white" : "text-muted-foreground")}>
-                                    Mensal
-                                </span>
-                                <Switch
-                                    checked={isAnnual}
-                                    onCheckedChange={setIsAnnual}
-                                    className="data-[state=checked]:bg-violet-600"
-                                />
-                                <span className={cn("text-sm font-medium transition-colors", isAnnual ? "text-slate-900 dark:text-white" : "text-muted-foreground")}>
-                                    Anual <span className="inline-block ml-2 text-[10px] font-bold uppercase tracking-wider text-green-600 bg-green-100 dark:bg-green-900/40 px-2 py-0.5 rounded-full ring-1 ring-green-600/20">-20% OFF</span>
+                                <span className={cn("text-sm font-medium", !isAnnual ? "text-slate-900 dark:text-white" : "text-slate-400")}>Mensal</span>
+                                <Switch checked={isAnnual} onCheckedChange={setIsAnnual} className="data-[state=checked]:bg-violet-600" />
+                                <span className={cn("text-sm font-medium", isAnnual ? "text-slate-900 dark:text-white" : "text-slate-400")}>
+                                    Anual <span className="ml-2 text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/40 px-2 py-0.5 rounded-full">-20%</span>
                                 </span>
                             </div>
                         </div>
@@ -158,71 +317,43 @@ export default function HomePage() {
                                 return (
                                     <div key={plan.id} className="relative group">
                                         {plan.id === 'pro' && (
-                                            <div className="absolute -inset-[1px] rounded-[24px] bg-gradient-to-br from-violet-600 to-indigo-600 opacity-100 blur-sm group-hover:blur transition-all duration-300"></div>
+                                            <div className="absolute -inset-[2px] rounded-[24px] bg-gradient-to-br from-violet-600 to-indigo-600 opacity-100 blur-sm"></div>
                                         )}
                                         <Card className={cn(
-                                            "relative flex flex-col h-full border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 backdrop-blur-sm rounded-[22px] overflow-hidden transition-all duration-300",
-                                            plan.id === 'pro' ? "shadow-2xl shadow-violet-500/20" : "hover:shadow-xl hover:-translate-y-1"
+                                            "relative flex flex-col h-full bg-white dark:bg-slate-900 rounded-[22px] overflow-hidden",
+                                            plan.id === 'pro' ? "shadow-2xl shadow-violet-500/20" : ""
                                         )}>
                                             {plan.id === 'pro' && (
                                                 <div className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-bold text-center py-1.5 uppercase tracking-wider">
-                                                    Mais Popular
+                                                    ⭐ Mais Escolhido
                                                 </div>
                                             )}
-
-                                            <CardHeader className="pt-8 pb-4 space-y-1 text-center">
+                                            <CardHeader className="pt-8 pb-4 text-center">
                                                 <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-                                                <CardDescription className="text-base">{plan.description}</CardDescription>
+                                                <CardDescription>{plan.description}</CardDescription>
                                             </CardHeader>
-
-                                            <CardContent className="flex-1 flex flex-col items-center pb-8 border-b border-slate-100 dark:border-slate-800/50">
+                                            <CardContent className="flex-1 flex flex-col items-center pb-8 border-b border-slate-100 dark:border-slate-800">
                                                 <div className="flex items-baseline gap-1 mb-1">
-                                                    <span className="text-sm text-slate-500 align-top mt-2">R$</span>
-                                                    <span className="text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                                                        {price.toFixed(0)}
-                                                    </span>
-                                                    <span className="text-slate-500 font-medium">,90</span>
+                                                    <span className="text-sm text-slate-500">R$</span>
+                                                    <span className="text-5xl font-extrabold text-slate-900 dark:text-white">{price.toFixed(0)}</span>
+                                                    <span className="text-slate-500">,90</span>
                                                 </div>
-                                                <span className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                                                    por mês
-                                                    {isAnnual && <span className="block text-xs opacity-80">(faturado anualmente)</span>}
-                                                </span>
-
+                                                <span className="text-sm text-slate-500 mb-6">por mês {isAnnual && <span className="block text-xs">(faturado anualmente)</span>}</span>
                                                 <Link href="/login" className="w-full max-w-xs">
-                                                    <Button
-                                                        size="lg"
-                                                        className={cn(
-                                                            "w-full rounded-full transition-all duration-300",
-                                                            plan.id === 'pro'
-                                                                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 shadow-lg"
-                                                                : "bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                                                        )}
-                                                    >
-                                                        Assinar Agora
+                                                    <Button size="lg" className={cn("w-full rounded-full", plan.id === 'pro' ? "bg-violet-600 hover:bg-violet-700 text-white" : "")}>
+                                                        Começar Agora
                                                     </Button>
                                                 </Link>
                                             </CardContent>
-
                                             <CardContent className="pt-8 pb-8 px-8">
-                                                <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300">
-                                                    <li className="flex items-start gap-3">
-                                                        <div className="h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0 mt-0.5">
-                                                            <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                                        </div>
-                                                        <span>Até <strong>{plan.limits.proposals}</strong> propostas/mês</span>
-                                                    </li>
-                                                    <li className="flex items-start gap-3">
-                                                        <div className="h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0 mt-0.5">
-                                                            <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                                        </div>
-                                                        <span>Usuários Ilimitados*</span>
-                                                    </li>
-                                                    <li className="flex items-start gap-3">
-                                                        <div className="h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0 mt-0.5">
-                                                            <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                                        </div>
-                                                        <span>Suporte via Email</span>
-                                                    </li>
+                                                <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                                                    <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500" /> Até <strong>{plan.limits.proposals}</strong> propostas/mês</li>
+                                                    <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500" /> Todos os templates</li>
+                                                    <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500" /> Dashboard de controle</li>
+                                                    <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500" /> Aceite do cliente</li>
+                                                    <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500" /> Webhook para integrações</li>
+                                                    {plan.id !== 'basic' && <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500" /> Templates personalizados</li>}
+                                                    {plan.id === 'enterprise' && <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500" /> Suporte via WhatsApp</li>}
                                                 </ul>
                                             </CardContent>
                                         </Card>
@@ -230,49 +361,91 @@ export default function HomePage() {
                                 );
                             })}
                         </div>
+
+                        <div className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-slate-600 dark:text-slate-400">
+                            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> 7 dias grátis sem cartão</span>
+                            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Cancele quando quiser</span>
+                            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Atualizações gratuitas</span>
+                        </div>
                     </div>
                 </section>
 
-                {/* FAQ Section */}
-                <section className="py-20 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-                    <div className="container max-w-4xl mx-auto px-6 text-center">
-                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-12">Perguntas Frequentes</h2>
-                        <div className="grid md:grid-cols-2 gap-10 text-left">
-                            <div>
-                                <h3 className="font-bold text-lg mb-2">Posso cancelar a qualquer momento?</h3>
-                                <p className="text-slate-600 dark:text-slate-400">Sim, não há fidelidade. Você pode cancelar sua assinatura a qualquer momento através do painel.</p>
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-lg mb-2">Como funcionam os usuários extras?</h3>
-                                <p className="text-slate-600 dark:text-slate-400">Cada plano base inclui 1 usuário admin. Você pode adicionar membros ilimitados por R$ 15,00/mês cada.</p>
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-lg mb-2">Aceitam PIX?</h3>
-                                <p className="text-slate-600 dark:text-slate-400">Atualmente aceitamos cartões de crédito via Stripe. PIX estará disponível em breve.</p>
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-lg mb-2">Tenho suporte?</h3>
-                                <p className="text-slate-600 dark:text-slate-400">Sim, todos os planos contam com suporte especializado para ajudar você a configurar suas propostas.</p>
+                {/* FAQ SECTION */}
+                <section id="faq" className="py-24 bg-slate-50 dark:bg-slate-950">
+                    <div className="container max-w-3xl mx-auto px-6">
+                        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white text-center mb-4">Perguntas Frequentes</h2>
+                        <p className="text-center text-slate-600 dark:text-slate-400 mb-12">E nossas respostas honestas</p>
+
+                        <div className="space-y-4">
+                            {faqs.map((faq, i) => (
+                                <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="w-full flex items-center justify-between p-6 text-left">
+                                        <span className="font-semibold text-slate-900 dark:text-white">{faq.q}</span>
+                                        <ChevronDown className={cn("h-5 w-5 text-slate-400 transition-transform", openFaq === i && "rotate-180")} />
+                                    </button>
+                                    {openFaq === i && (
+                                        <div className="px-6 pb-6 text-slate-600 dark:text-slate-400">{faq.a}</div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* CTA FINAL */}
+                <section className="py-24 bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 text-white relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/10 to-transparent"></div>
+                    <div className="container max-w-4xl mx-auto px-6 text-center relative">
+                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+                            Pare de perder vendas por causa de propostas lentas
+                        </h2>
+                        <p className="text-xl text-white/80 mb-4">Cada dia que passa usando planilhas e PDFs é dinheiro deixado na mesa.</p>
+                        <p className="text-lg text-white/60 mb-10">A pergunta não é &quot;será que funciona?&quot;. A pergunta é: <strong className="text-white">quanto você vai perder até começar?</strong></p>
+
+                        <Link href="/login">
+                            <Button size="lg" className="h-16 px-10 text-xl rounded-full bg-white text-violet-700 hover:bg-slate-100 shadow-2xl hover:-translate-y-1 transition-all">
+                                Começar Teste Grátis de 7 Dias <ArrowRight className="ml-3 h-6 w-6" />
+                            </Button>
+                        </Link>
+                        <p className="mt-6 text-white/60">Sem cartão. Sem compromisso. Só resultados.</p>
+
+                        <div className="mt-12 p-6 bg-white/10 backdrop-blur rounded-2xl inline-flex items-center gap-4">
+                            <Shield className="h-8 w-8" />
+                            <div className="text-left">
+                                <p className="font-bold">Teste sem Risco por 7 Dias</p>
+                                <p className="text-sm text-white/70">Use todas as funcionalidades. Se não gostar, não paga nada.</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Footer */}
-                <footer className="bg-slate-50 dark:bg-slate-950 py-12 border-t border-slate-200 dark:border-slate-800">
-                    <div className="container max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div className="text-center md:text-left">
-                            <div className="font-bold text-xl bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-                                Propostas.ai
+                {/* FOOTER */}
+                <footer className="bg-slate-900 text-white py-16">
+                    <div className="container max-w-6xl mx-auto px-6">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+                            <div className="text-center md:text-left">
+                                <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
+                                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
+                                        <Zap className="h-5 w-5" />
+                                    </div>
+                                    <span className="font-bold text-xl">Digital Leads</span>
+                                </div>
+                                <p className="text-slate-400 text-sm">Sistema de Propostas Comerciais para quem vende sério</p>
                             </div>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                                © 2024 Digital Leads. Todos os direitos reservados.
-                            </p>
+                            <div className="flex flex-col items-center md:items-end gap-4">
+                                <div className="flex items-center gap-2 text-slate-400">
+                                    <Mail className="h-4 w-4" />
+                                    <span className="text-sm">contato@digitalleads.com.br</span>
+                                </div>
+                                <div className="flex gap-6 text-sm text-slate-400">
+                                    <Link href="#" className="hover:text-white transition-colors">Termos</Link>
+                                    <Link href="#" className="hover:text-white transition-colors">Privacidade</Link>
+                                    <Link href="#faq" className="hover:text-white transition-colors">FAQ</Link>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex gap-6 text-sm font-medium text-slate-600 dark:text-slate-400">
-                            <Link href="#" className="hover:text-violet-600 transition-colors">Termos</Link>
-                            <Link href="#" className="hover:text-violet-600 transition-colors">Privacidade</Link>
-                            <Link href="#" className="hover:text-violet-600 transition-colors">Contato</Link>
+                        <div className="mt-12 pt-8 border-t border-slate-800 text-center text-sm text-slate-500">
+                            © 2026 Digital Leads. Todos os direitos reservados.
                         </div>
                     </div>
                 </footer>
