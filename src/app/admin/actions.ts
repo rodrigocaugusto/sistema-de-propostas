@@ -209,3 +209,156 @@ export async function getCompanySubscriptionDetails(companyId: string) {
     }
 }
 
+// Update company details
+export async function updateCompany(companyId: string, data: {
+    name?: string;
+    email?: string;
+    responsible?: string;
+    plan?: string;
+    phone?: string;
+}) {
+    await checkSuperAdmin();
+
+    try {
+        await prisma.company.update({
+            where: { id: companyId },
+            data: {
+                ...(data.name && { name: data.name }),
+                ...(data.email && { email: data.email }),
+                ...(data.responsible && { responsible: data.responsible }),
+                ...(data.plan && { plan: data.plan }),
+                ...(data.phone && { phone: data.phone }),
+            }
+        });
+
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Update company error:', error);
+        return { success: false, error: error.message || 'Erro ao atualizar empresa' };
+    }
+}
+
+// Get company invoices from Stripe
+export async function getCompanyInvoices(companyId: string) {
+    await checkSuperAdmin();
+
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { stripeCustomerId: true }
+    });
+
+    if (!company?.stripeCustomerId) {
+        return [];
+    }
+
+    try {
+        const { getStripe } = await import('@/lib/stripe');
+        const stripe = getStripe();
+
+        const invoices = await stripe.invoices.list({
+            customer: company.stripeCustomerId,
+            limit: 24,
+        });
+
+        return invoices.data.map(inv => ({
+            id: inv.id,
+            number: inv.number,
+            status: inv.status,
+            amount: (inv.amount_paid || 0) / 100,
+            currency: inv.currency,
+            created: new Date(inv.created * 1000).toISOString(),
+            invoicePdf: inv.invoice_pdf,
+        }));
+    } catch (error) {
+        console.error('Get invoices error:', error);
+        return [];
+    }
+}
+
+// Get admin dashboard stats with revenue
+export async function getAdminStats() {
+    await checkSuperAdmin();
+
+    try {
+        const { getStripe } = await import('@/lib/stripe');
+        const stripe = getStripe();
+
+        // Get all companies with subscription
+        const companies = await prisma.company.findMany({
+            where: { stripeCustomerId: { not: null } },
+            select: { stripeCustomerId: true, plan: true, status: true }
+        });
+
+        let totalRevenue = 0;
+        let monthlyRevenue = 0;
+        let activeSubscriptions = 0;
+
+        // Get this month's start date
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        // Calculate revenue from paid invoices
+        for (const company of companies) {
+            if (!company.stripeCustomerId) continue;
+
+            try {
+                const invoices = await stripe.invoices.list({
+                    customer: company.stripeCustomerId,
+                    status: 'paid',
+                    limit: 100,
+                });
+
+                for (const inv of invoices.data) {
+                    const amount = (inv.amount_paid || 0) / 100;
+                    totalRevenue += amount;
+
+                    const invoiceDate = new Date(inv.created * 1000);
+                    if (invoiceDate >= startOfMonth) {
+                        monthlyRevenue += amount;
+                    }
+                }
+
+                // Check if has active subscription
+                const subs = await stripe.subscriptions.list({
+                    customer: company.stripeCustomerId,
+                    status: 'active',
+                    limit: 1,
+                });
+                if (subs.data.length > 0) {
+                    activeSubscriptions++;
+                }
+            } catch (error) {
+                // Skip if customer not found
+                continue;
+            }
+        }
+
+        // Get proposal stats
+        const totalProposals = await prisma.proposal.count();
+        const acceptedProposals = await prisma.proposal.count({
+            where: { status: 'accepted' }
+        });
+        const proposalValue = await prisma.proposal.aggregate({
+            _sum: {
+                totalOneTime: true,
+                totalRecurring: true
+            }
+        });
+
+        return {
+            totalRevenue,
+            monthlyRevenue,
+            activeSubscriptions,
+            totalCompanies: companies.length,
+            totalProposals,
+            acceptedProposals,
+            proposalValueOneTime: proposalValue._sum.totalOneTime || 0,
+            proposalValueRecurring: proposalValue._sum.totalRecurring || 0,
+        };
+    } catch (error) {
+        console.error('Get admin stats error:', error);
+        return null;
+    }
+}

@@ -2,16 +2,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription } from './actions';
+import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription, updateCompany, getCompanyInvoices, getAdminStats } from './actions';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw, Edit, DollarSign, TrendingUp, Receipt, Download, ExternalLink, Eye } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/app/auth/actions';
 import { useRouter } from 'next/navigation';
@@ -24,6 +24,7 @@ interface Company {
     slug: string | null;
     email: string | null;
     responsible: string | null;
+    phone: string | null;
     plan: string;
     status: string;
     userCount: number;
@@ -33,12 +34,39 @@ interface Company {
     stripeCustomerId?: string | null;
 }
 
+interface AdminStats {
+    totalRevenue: number;
+    monthlyRevenue: number;
+    activeSubscriptions: number;
+    totalCompanies: number;
+    totalProposals: number;
+    acceptedProposals: number;
+    proposalValueOneTime: number;
+    proposalValueRecurring: number;
+}
+
+interface Invoice {
+    id: string;
+    number: string | null;
+    status: string | null;
+    amount: number;
+    currency: string;
+    created: string;
+    invoicePdf: string | null;
+}
+
 export default function AdminDashboard() {
     const router = useRouter();
     const [companies, setCompanies] = useState<Company[]>([]);
+    const [stats, setStats] = useState<AdminStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isInvoicesOpen, setIsInvoicesOpen] = useState(false);
+    const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [loadingInvoices, setLoadingInvoices] = useState(false);
 
     // New Company Form State
     const [newCompany, setNewCompany] = useState({
@@ -49,19 +77,29 @@ export default function AdminDashboard() {
     });
     const [isCreating, setIsCreating] = useState(false);
 
+    // Edit Company Form State
+    const [editForm, setEditForm] = useState({
+        name: '',
+        email: '',
+        responsible: '',
+        phone: '',
+        plan: ''
+    });
+    const [isUpdating, setIsUpdating] = useState(false);
+
     useEffect(() => {
         loadData();
     }, []);
 
     const loadData = async () => {
         try {
-            // Verifica permissão (client-side check for UX, server action does real check)
             const session = await getCurrentUser();
-            // Note: getSession on client might not have isSuperAdmin typed perfectly without casting if it wasn't updated in library type
-            // But let's assume it works or the server action will bounce us.
-
-            const data = await getCompanies();
-            setCompanies(data as unknown as Company[]);
+            const [companiesData, statsData] = await Promise.all([
+                getCompanies(),
+                getAdminStats()
+            ]);
+            setCompanies(companiesData as unknown as Company[]);
+            setStats(statsData);
         } catch (error) {
             toast.error("Acesso negado");
             router.push('/dashboard');
@@ -141,6 +179,60 @@ export default function AdminDashboard() {
         }
     };
 
+    const openEditDialog = (company: Company) => {
+        setSelectedCompany(company);
+        setEditForm({
+            name: company.name,
+            email: company.email || '',
+            responsible: company.responsible || '',
+            phone: company.phone || '',
+            plan: company.plan
+        });
+        setIsEditOpen(true);
+    };
+
+    const handleUpdateCompany = async () => {
+        if (!selectedCompany) return;
+
+        setIsUpdating(true);
+        try {
+            const result = await updateCompany(selectedCompany.id, editForm);
+            if (result.success) {
+                toast.success("Empresa atualizada com sucesso!");
+                setIsEditOpen(false);
+                loadData();
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao atualizar empresa");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const openInvoicesDialog = async (company: Company) => {
+        setSelectedCompany(company);
+        setIsInvoicesOpen(true);
+        setLoadingInvoices(true);
+        try {
+            const invoiceList = await getCompanyInvoices(company.id);
+            setInvoices(invoiceList as Invoice[]);
+        } catch {
+            toast.error("Erro ao carregar faturas");
+        } finally {
+            setLoadingInvoices(false);
+        }
+    };
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    };
+
+    const formatDate = (dateStr: string) => {
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+    };
+
     const filteredCompanies = companies.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -187,7 +279,80 @@ export default function AdminDashboard() {
             </header>
 
             <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-                {/* Stats Cards */}
+                {/* Revenue Stats */}
+                {stats && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <Card className="border-0 shadow-lg shadow-green-500/10 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-green-700 dark:text-green-400 flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4" /> Receita Total
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold text-green-800 dark:text-green-300">
+                                    {formatCurrency(stats.totalRevenue)}
+                                </div>
+                                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                                    Todos os pagamentos recebidos
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-0 shadow-lg shadow-blue-500/10 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                                    <TrendingUp className="h-4 w-4" /> Receita Mensal
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold text-blue-800 dark:text-blue-300">
+                                    {formatCurrency(stats.monthlyRevenue)}
+                                </div>
+                                <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
+                                    Este mês
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-0 shadow-lg shadow-purple-500/10 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-400 flex items-center gap-2">
+                                    <CreditCard className="h-4 w-4" /> Assinaturas Ativas
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold text-purple-800 dark:text-purple-300">
+                                    {stats.activeSubscriptions}
+                                </div>
+                                <p className="text-xs text-purple-600 dark:text-purple-500 mt-1">
+                                    de {stats.totalCompanies} empresas
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-0 shadow-lg shadow-amber-500/10 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                                    <FileText className="h-4 w-4" /> Propostas
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold text-amber-800 dark:text-amber-300">
+                                    {stats.acceptedProposals}/{stats.totalProposals}
+                                </div>
+                                <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                                    Aceitas/Total • {formatCurrency(stats.proposalValueOneTime + (stats.proposalValueRecurring * 12))}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {/* Original Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <Card className="border-0 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -293,6 +458,121 @@ export default function AdminDashboard() {
                     </Dialog>
                 </div>
 
+                {/* Edit Company Dialog */}
+                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle>Editar Empresa</DialogTitle>
+                            <DialogDescription>
+                                Atualize os dados da empresa e do plano.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-name">Nome</Label>
+                                    <Input id="edit-name" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-responsible">Responsável</Label>
+                                    <Input id="edit-responsible" value={editForm.responsible} onChange={e => setEditForm({ ...editForm, responsible: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-email">Email</Label>
+                                    <Input id="edit-email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-phone">Telefone</Label>
+                                    <Input id="edit-phone" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-plan">Plano</Label>
+                                <select
+                                    id="edit-plan"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    value={editForm.plan}
+                                    onChange={e => setEditForm({ ...editForm, plan: e.target.value })}
+                                >
+                                    {Object.values(PLANS).map((plan) => (
+                                        <option key={plan.id} value={plan.id}>
+                                            {plan.name} - {plan.limits.proposals} propostas/mês
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleUpdateCompany} disabled={isUpdating}>
+                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Salvar Alterações
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Invoices Dialog */}
+                <Dialog open={isInvoicesOpen} onOpenChange={setIsInvoicesOpen}>
+                    <DialogContent className="sm:max-w-[600px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Receipt className="h-5 w-5" /> Faturas - {selectedCompany?.name}
+                            </DialogTitle>
+                            <DialogDescription>
+                                Histórico de pagamentos da empresa no Stripe.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="max-h-[400px] overflow-y-auto">
+                            {loadingInvoices ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                </div>
+                            ) : invoices.length === 0 ? (
+                                <div className="text-center py-12 text-muted-foreground">
+                                    <Receipt className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                                    <p>Nenhuma fatura encontrada</p>
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Fatura</TableHead>
+                                            <TableHead>Data</TableHead>
+                                            <TableHead>Valor</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead></TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {invoices.map((inv) => (
+                                            <TableRow key={inv.id}>
+                                                <TableCell className="font-mono text-xs">{inv.number || inv.id.slice(-8)}</TableCell>
+                                                <TableCell>{formatDate(inv.created)}</TableCell>
+                                                <TableCell className="font-medium">{formatCurrency(inv.amount)}</TableCell>
+                                                <TableCell>
+                                                    <Badge className={inv.status === 'paid' ? 'bg-green-100 text-green-700 border-0' : 'bg-yellow-100 text-yellow-700 border-0'}>
+                                                        {inv.status === 'paid' ? 'Pago' : inv.status}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {inv.invoicePdf && (
+                                                        <Button variant="ghost" size="sm" onClick={() => window.open(inv.invoicePdf!, '_blank')}>
+                                                            <Download className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
                 {/* Companies Table */}
                 <Card className="border-0 shadow-xl shadow-slate-200/40 dark:shadow-slate-900/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl overflow-hidden">
                     <Table>
@@ -353,6 +633,26 @@ export default function AdminDashboard() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => openEditDialog(company)}
+                                                    className="text-slate-500 hover:text-slate-700"
+                                                    title="Editar"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                {company.stripeCustomerId && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => openInvoicesDialog(company)}
+                                                        className="text-violet-500 hover:text-violet-600 hover:bg-violet-50"
+                                                        title="Ver Faturas"
+                                                    >
+                                                        <Receipt className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                                 {company.stripeSubscriptionId && (
                                                     <>
                                                         <Button
