@@ -67,6 +67,7 @@ export interface Proposal {
     createdBy?: {
         name: string;
         email: string;
+        phone: string | null;
     } | null;
 }
 
@@ -331,7 +332,7 @@ export async function getProposal(id: string) {
         include: {
             items: true,
             createdBy: {
-                select: { name: true, email: true } // Fetch creator name
+                select: { name: true, email: true, phone: true } // Fetch creator details
             }
         },
     });

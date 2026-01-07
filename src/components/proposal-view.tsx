@@ -311,7 +311,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                                             <a href={`mailto:${proposal.createdBy?.email || company.email}`}><Mail className="w-4 h-4 mr-2" /> {proposal.createdBy?.email || company.email}</a>
                                         </Button>
                                         <Button variant="outline" size="sm" asChild>
-                                            <a href={`tel:${company.phone}`}><Phone className="w-4 h-4 mr-2" /> {company.phone}</a>
+                                            <a href={`tel:${proposal.createdBy?.phone || company.phone}`}><Phone className="w-4 h-4 mr-2" /> {proposal.createdBy?.phone || company.phone}</a>
                                         </Button>
                                     </div>
                                 </div>

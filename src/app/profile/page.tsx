@@ -36,6 +36,7 @@ interface UserData {
     name: string;
     role: string;
     isSuperAdmin: boolean;
+    phone?: string | null;
 }
 
 export default function ProfilePage() {
@@ -47,6 +48,7 @@ export default function ProfilePage() {
 
     // Profile form
     const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
 
     // Password form
     const [currentPassword, setCurrentPassword] = useState('');
@@ -67,6 +69,7 @@ export default function ProfilePage() {
         }
         setUser(userData);
         setName(userData.name);
+        setPhone(userData.phone || '');
         setIsLoading(false);
     };
 
@@ -76,7 +79,7 @@ export default function ProfilePage() {
 
         setIsSaving(true);
         try {
-            const result = await updateUser(user.id, { name: name.trim() });
+            const result = await updateUser(user.id, { name: name.trim(), phone: phone.trim() });
             if (result.success) {
                 toast.success('Perfil atualizado com sucesso!');
                 router.refresh();
@@ -232,6 +235,17 @@ export default function ProfilePage() {
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
                                         placeholder="Seu nome completo"
+                                        disabled={isSaving}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Telefone / WhatsApp</Label>
+                                    <Input
+                                        id="phone"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        placeholder="(00) 00000-0000"
                                         disabled={isSaving}
                                     />
                                 </div>

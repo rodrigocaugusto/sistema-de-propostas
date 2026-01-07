@@ -13,6 +13,7 @@ export interface UserPayload {
     role: string;
     companyId?: string; // Optional because super admin or pending users might not have it yet? Actually let's assume valid users have it or we handle undefined.
     isSuperAdmin: boolean;
+    phone?: string | null;
 }
 
 export async function hashPassword(password: string): Promise<string> {
