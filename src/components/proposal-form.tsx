@@ -339,7 +339,7 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
 
             if (win) {
                 win.focus();
-                router.push('/');
+                router.push('/dashboard');
             } else {
                 router.push(url);
             }
