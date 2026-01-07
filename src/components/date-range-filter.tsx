@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
     Select,
     SelectContent,
@@ -12,6 +12,7 @@ import { CalendarIcon } from "lucide-react";
 
 export function DateRangeFilter() {
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
     const currentPeriod = searchParams.get('period') || 'all';
 
@@ -22,7 +23,7 @@ export function DateRangeFilter() {
         } else {
             params.set('period', value);
         }
-        router.push(`/?${params.toString()}`);
+        router.push(`${pathname}?${params.toString()}`);
     };
 
     return (
