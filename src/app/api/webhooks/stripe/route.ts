@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 import { prisma } from '@/lib/db';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, sendAdminNotification } from '@/lib/email';
 import Stripe from 'stripe';
 import bcrypt from 'bcryptjs';
 
@@ -216,6 +216,18 @@ export async function POST(req: Request) {
                     });
                 }
                 console.log('Existing user upgraded:', customerEmail);
+
+                // Alert Admin
+                await sendAdminNotification('new_subscription', {
+                    title: `Renovação/Upgrade de Assinatura Detectada`,
+                    details: {
+                        'Cliente': customerName,
+                        'Email': customerEmail,
+                        'Novo Plano': planId,
+                        'Tipo': 'Usuário Existente',
+                        'Data': new Date().toLocaleString('pt-BR')
+                    }
+                });
             } else {
                 // NEW USER - Create company, user, and send credentials
                 const password = generatePassword();
@@ -262,6 +274,18 @@ export async function POST(req: Request) {
                 });
 
                 console.log('New user created and email sent:', customerEmail);
+
+                // Alert Admin
+                await sendAdminNotification('new_user_company', {
+                    title: `Nova Conta e Assinatura Criada (${planNames[planId]})`,
+                    details: {
+                        'Cliente': customerName,
+                        'Email': customerEmail,
+                        'Plano': planNames[planId] || planId,
+                        'Empresa': customerName,
+                        'Data': new Date().toLocaleString('pt-BR')
+                    }
+                });
             }
         } else if (!isNewSignup && session.metadata?.companyId) {
             // Existing company upgrading - legacy behavior

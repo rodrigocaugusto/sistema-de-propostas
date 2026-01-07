@@ -11,6 +11,7 @@ import {
     generatePassword,
 } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { sendAdminNotification } from '@/lib/email';
 
 export async function login(email: string, password: string, honeypot?: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -145,6 +146,22 @@ export async function createUser(data: {
                 name: true,
             },
         });
+
+        // Notify Admin System about new user (internal)
+        try {
+            await sendAdminNotification('new_user_company', {
+                title: `Novo Usuário Adicionado na Equipe`,
+                details: {
+                    'Nome': data.name,
+                    'Email': data.email,
+                    'Empresa ID': session.companyId || 'N/A',
+                    'Criado Por': session.email,
+                    'Role': data.role || 'user'
+                }
+            });
+        } catch (e) {
+            console.error('Failed to send admin alert:', e);
+        }
 
         return { success: true, user };
     } catch (error) {

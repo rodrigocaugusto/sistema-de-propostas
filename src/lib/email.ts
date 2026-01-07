@@ -445,3 +445,67 @@ export async function sendPasswordResetEmail(to: string, data: {
         text: template.text
     });
 }
+
+// Template: Alerta para o Admin do Sistema
+export function getAdminAlertTemplate(data: {
+    type: 'new_subscription' | 'new_user_company';
+    title: string;
+    details: Record<string, string>;
+}) {
+    const detailsHtml = Object.entries(data.details).map(([key, value]) => `
+        <tr>
+            <td style="padding: 8px 0; color: #52525b; font-size: 14px; width: 140px;">${key}:</td>
+            <td style="padding: 8px 0; color: #18181b; font-size: 16px; font-weight: 600;">${value}</td>
+        </tr>
+    `).join('');
+
+    return {
+        subject: `🚨 [ADMIN] ${data.title}`,
+        html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; background-color: #f4f4f5; padding: 40px 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h1 style="color: #18181b; margin-top: 0; font-size: 24px;">🔔 Novo Alerta do Sistema</h1>
+        <p style="color: #52525b; font-size: 16px; font-weight: 500;">${data.title}</p>
+        
+        <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <h3 style="margin: 0 0 15px; color: #0369a1; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #bae6fd; padding-bottom: 5px;">Detalhes</h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                ${detailsHtml}
+            </table>
+        </div>
+
+        <p style="color: #71717a; font-size: 12px; margin-top: 30px; text-align: center; border-top: 1px solid #e4e4e7; padding-top: 20px;">
+            Sistema de Propostas - Notificação Administrativa Automática
+        </p>
+    </div>
+</body>
+</html>
+        `,
+        text: `🔔 ADMIN ALERT: ${data.title}\n\n${Object.entries(data.details).map(([k, v]) => `${k}: ${v}`).join('\n')}`
+    };
+}
+
+export async function sendAdminNotification(type: 'new_subscription' | 'new_user_company', data: {
+    title: string;
+    details: Record<string, string>;
+}) {
+    // Uses ADMIN_NOTIFICATION_EMAIL or fallbacks to SMTP_FROM_EMAIL (the sender)
+    // Ideally user sets ADMIN_NOTIFICATION_EMAIL in .env
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_FROM_EMAIL;
+
+    if (!adminEmail) {
+        console.warn('ADMIN_NOTIFICATION_EMAIL not set. Skipping admin alert.');
+        return;
+    }
+
+    const template = getAdminAlertTemplate({ type, title: data.title, details: data.details });
+
+    return await sendEmail({
+        to: adminEmail,
+        subject: template.subject,
+        html: template.html,
+        text: template.text
+    });
+}
