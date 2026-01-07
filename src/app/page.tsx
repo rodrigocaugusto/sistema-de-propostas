@@ -62,12 +62,11 @@ export default function HomePage() {
             <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
                 <div className="container mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white">
-                            <Zap className="h-5 w-5" />
-                        </div>
-                        <span className="font-bold text-xl bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-                            Propostas.ai
-                        </span>
+                        <img
+                            src="/system-logo.png"
+                            alt="Propostas.ai"
+                            className="h-10 w-auto object-contain dark:invert"
+                        />
                     </div>
                     <div className="flex items-center gap-4">
                         <Link href="#pricing" className="hidden sm:block text-sm font-medium text-slate-600 hover:text-violet-600">Preços</Link>
@@ -100,14 +99,17 @@ export default function HomePage() {
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-                            <Link href="/login">
+                            <Link href="/register">
                                 <Button size="lg" className="h-14 px-8 text-lg rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-xl shadow-violet-500/25 hover:shadow-violet-500/40 transition-all hover:-translate-y-1">
                                     Começar Grátis Agora <ArrowRight className="ml-2 h-5 w-5" />
                                 </Button>
                             </Link>
-                            <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full border-slate-300 gap-2">
-                                <Play className="h-5 w-5" /> Ver Demo (45 seg)
-                            </Button>
+
+                            <Link href="#demo-video">
+                                <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full border-slate-300 gap-2">
+                                    <Play className="h-5 w-5" /> Ver Demo (45 seg)
+                                </Button>
+                            </Link>
                         </div>
 
                         {/* Social Proof */}
@@ -115,6 +117,19 @@ export default function HomePage() {
                             <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Propostas em média de 47 segundos</div>
                             <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Pipeline 100% organizado</div>
                             <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> 5.000+ integrações via webhook</div>
+                        </div>
+
+                        {/* Video Presentation */}
+                        <div id="demo-video" className="mt-20 relative mx-auto max-w-5xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-4 border-white/50 dark:border-slate-800 bg-slate-900">
+                            <div className="aspect-video relative">
+                                <iframe
+                                    className="absolute inset-0 w-full h-full"
+                                    src="https://www.youtube.com/embed/AGM8jMtZgc0?rel=0"
+                                    title="Apresentação do Sistema"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                ></iframe>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -438,7 +453,7 @@ export default function HomePage() {
                         <p className="text-xl text-white/80 mb-4">Cada dia que passa usando planilhas e PDFs é dinheiro deixado na mesa.</p>
                         <p className="text-lg text-white/60 mb-10">A pergunta não é &quot;será que funciona?&quot;. A pergunta é: <strong className="text-white">quanto você vai perder até começar?</strong></p>
 
-                        <Link href="/login">
+                        <Link href="/register">
                             <Button size="lg" className="h-16 px-10 text-xl rounded-full bg-white text-violet-700 hover:bg-slate-100 shadow-2xl hover:-translate-y-1 transition-all">
                                 Começar Teste Grátis de 7 Dias <ArrowRight className="ml-3 h-6 w-6" />
                             </Button>
@@ -461,10 +476,11 @@ export default function HomePage() {
                         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
                             <div className="text-center md:text-left">
                                 <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
-                                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
-                                        <Zap className="h-5 w-5" />
-                                    </div>
-                                    <span className="font-bold text-xl">Digital Leads</span>
+                                    <img
+                                        src="/system-logo.png"
+                                        alt="Digital Leads"
+                                        className="h-8 w-auto object-contain dark:invert opacity-80"
+                                    />
                                 </div>
                                 <p className="text-slate-400 text-sm">Sistema de Propostas Comerciais para quem vende sério</p>
                             </div>

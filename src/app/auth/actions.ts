@@ -391,3 +391,82 @@ export async function listUsers() {
 export async function generateNewPassword(): Promise<string> {
     return generatePassword(16);
 }
+
+export async function createTrialAccount(data: {
+    companyName: string;
+    userName: string;
+    email: string;
+    password: string;
+    honeypot?: string;
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        if (data.honeypot) {
+            return { success: false, error: 'Erro no cadastro.' };
+        }
+
+        const existingUser = await prisma.user.findUnique({
+            where: { email: data.email.toLowerCase() },
+        });
+
+        if (existingUser) {
+            return { success: false, error: 'Este e-mail já está em uso.' };
+        }
+
+        const hashedPassword = await hashPassword(data.password);
+
+        // Transaction to create company and user together
+        const result = await prisma.$transaction(async (tx) => {
+            const company = await tx.company.create({
+                data: {
+                    name: data.companyName,
+                    plan: 'trial',
+                    status: 'active',
+                }
+            });
+
+            const user = await tx.user.create({
+                data: {
+                    email: data.email.toLowerCase(),
+                    name: data.userName,
+                    password: hashedPassword,
+                    role: 'admin',
+                    companyId: company.id,
+                    isSuperAdmin: false,
+                }
+            });
+
+            return { company, user };
+        });
+
+        const token = await createToken({
+            id: result.user.id,
+            email: result.user.email,
+            name: result.user.name,
+            role: result.user.role,
+            companyId: result.company.id,
+            isSuperAdmin: result.user.isSuperAdmin,
+            phone: null,
+        });
+
+        await setSession(token);
+
+        try {
+            await sendAdminNotification('new_trial_user', {
+                title: `Novo Trial Cadastrado`,
+                details: {
+                    'Empresa': data.companyName,
+                    'Nome': data.userName,
+                    'Email': data.email
+                }
+            });
+        } catch (e) {
+            console.error('Failed to notify admin', e);
+        }
+
+        return { success: true };
+
+    } catch (error) {
+        console.error('Create trial error:', error);
+        return { success: false, error: 'Erro ao criar conta. Tente novamente.' };
+    }
+}

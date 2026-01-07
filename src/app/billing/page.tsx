@@ -210,375 +210,421 @@ function BillingContent() {
     const currentPlan = company?.plan ? PLANS[company.plan as PlanId] : null;
 
     return (
-        <div className="container max-w-6xl py-10 space-y-10">
-            <div className="flex justify-start">
-                <Button variant="ghost" size="sm" onClick={() => window.location.href = '/dashboard'}>
-                    <ChevronLeft className="mr-2 h-4 w-4" />  Voltar para Dashboard
-                </Button>
-            </div>
-            <div className="text-center space-y-4">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-                    Planos e Assinaturas
-                </h1>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Gerencie sua assinatura, visualize faturas e escolha o melhor plano para seu negócio.
-                </p>
-            </div>
+        <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50">
+            <div className="container max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8 space-y-12">
 
-            <Tabs defaultValue="subscription" className="space-y-8">
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
-                    <TabsTrigger value="subscription" className="gap-2">
-                        <CreditCard className="h-4 w-4" /> Assinatura
-                    </TabsTrigger>
-                    <TabsTrigger value="invoices" className="gap-2">
-                        <FileText className="h-4 w-4" /> Faturas
-                    </TabsTrigger>
-                    <TabsTrigger value="plans" className="gap-2">
-                        <Calendar className="h-4 w-4" /> Planos
-                    </TabsTrigger>
-                </TabsList>
+                {/* Header Section */}
+                <div className="relative">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.location.href = '/dashboard'}
+                        className="absolute left-0 top-0 md:-ml-12 md:top-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    >
+                        <ChevronLeft className="mr-1 h-4 w-4" /> Voltar
+                    </Button>
 
-                {/* SUBSCRIPTION TAB */}
-                <TabsContent value="subscription" className="space-y-6">
-                    {subscription?.hasSubscription ? (
-                        <Card className="max-w-2xl mx-auto">
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <CardTitle className="text-xl">Sua Assinatura</CardTitle>
-                                        <CardDescription>Detalhes do seu plano atual</CardDescription>
-                                    </div>
-                                    <Badge className={
-                                        subscription.status === 'active'
-                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30'
-                                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30'
-                                    }>
-                                        {subscription.status === 'active' ? 'Ativo' : subscription.status}
-                                    </Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                                        <p className="text-sm text-muted-foreground">Plano</p>
-                                        <p className="text-lg font-bold">{currentPlan?.name || subscription.plan}</p>
-                                    </div>
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                                        <p className="text-sm text-muted-foreground">Propostas/mês</p>
-                                        <p className="text-lg font-bold">{currentPlan?.limits.proposals || 'N/A'}</p>
-                                    </div>
-                                    {subscription.currentPeriodEnd && (
-                                        <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg col-span-2">
-                                            <p className="text-sm text-muted-foreground">Renova em</p>
-                                            <p className="font-medium">
-                                                {formatDate(subscription.currentPeriodEnd)}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
+                    <div className="text-center space-y-4 pt-8 md:pt-0">
+                        <div className="inline-flex items-center justify-center p-3 bg-violet-100 dark:bg-violet-900/30 rounded-2xl mb-2">
+                            <CreditCard className="h-8 w-8 text-violet-600 dark:text-violet-400" />
+                        </div>
+                        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                            Minha Assinatura
+                        </h1>
+                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+                            Gerencie seu plano, controle licenças e acesse seu histórico financeiro em um só lugar.
+                        </p>
+                    </div>
+                </div>
 
-                                {/* Extra Seats Management */}
-                                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h4 className="font-semibold flex items-center gap-2">
-                                                <Users className="h-4 w-4 text-indigo-500" />
-                                                Licenças de Usuário
-                                            </h4>
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                                Total de vagas: <strong>{(currentPlan?.limits.users || 1) + (company?.extraUsers || 0)}</strong>
-                                            </p>
-                                            <p className="text-xs text-slate-500">
-                                                ({currentPlan?.limits.users || 1} do plano + {company?.extraUsers || 0} extras)
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg">
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => handleUpdateSeats((company?.extraUsers || 0) - 1)}
-                                                disabled={!company?.extraUsers || company.extraUsers <= 0}
-                                            >
-                                                -
-                                            </Button>
-                                            <span className="font-mono w-8 text-center">{company?.extraUsers || 0}</span>
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => handleUpdateSeats((company?.extraUsers || 0) + 1)}
-                                            >
-                                                +
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-slate-500">
-                                        Custo adicional: R$ {(currentPlan?.prices as any).extraUser?.toFixed(2).replace('.', ',') || '0,00'} / usuário mês
-                                    </p>
-                                </div>
+                <Tabs defaultValue="subscription" className="w-full space-y-8">
+                    <div className="flex justify-center">
+                        <TabsList className="grid w-full max-w-md grid-cols-3 p-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+                            <TabsTrigger value="subscription" className="rounded-full data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm transition-all">
+                                Assinatura
+                            </TabsTrigger>
+                            <TabsTrigger value="invoices" className="rounded-full data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm transition-all">
+                                Faturas
+                            </TabsTrigger>
+                            <TabsTrigger value="plans" className="rounded-full data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm transition-all">
+                                Trocar Plano
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
-                                <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                                    {subscription.cancelAtPeriodEnd && (
-                                        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-3">
-                                            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                    {/* SUBSCRIPTION TAB */}
+                    <TabsContent value="subscription" className="space-y-6 animate-in fade-in-50 duration-500 slide-in-from-bottom-2">
+                        {subscription?.hasSubscription ? (
+                            <div className="grid md:grid-cols-3 gap-6">
+                                {/* Main Plan Card */}
+                                <Card className="md:col-span-2 shadow-lg border-slate-200 dark:border-slate-800 overflow-hidden">
+                                    <div className="h-2 bg-gradient-to-r from-violet-500 to-indigo-500" />
+                                    <CardHeader className="pb-4">
+                                        <div className="flex items-start justify-between">
                                             <div>
-                                                <p className="font-medium text-amber-800 dark:text-amber-200">Assinatura será cancelada</p>
-                                                <p className="text-sm text-amber-700 dark:text-amber-300">
-                                                    Sua assinatura será encerrada em {subscription.currentPeriodEnd && formatDate(subscription.currentPeriodEnd)}.
-                                                    Você pode reativar a qualquer momento antes dessa data.
+                                                <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                                                    {currentPlan?.name || subscription.plan}
+                                                    <Badge className={
+                                                        subscription.status === 'active'
+                                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 border-green-200'
+                                                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30'
+                                                    }>
+                                                        {subscription.status === 'active' ? 'Ativo' : subscription.status}
+                                                    </Badge>
+                                                </CardTitle>
+                                                <CardDescription className="mt-1">
+                                                    Renova em {subscription.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : 'N/A'}
+                                                </CardDescription>
+                                            </div>
+                                            <div className="text-right hidden sm:block">
+                                                <p className="text-sm font-medium text-slate-500">Valor Atual</p>
+                                                <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                                                    {/* Estimativa visual, o valor real vem do stripe */}
+                                                    --
                                                 </p>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex flex-wrap gap-3">
-                                <Button variant="outline" onClick={handlePortal} disabled={loadingPlan === 'portal'}>
-                                    {loadingPlan === 'portal' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    <ExternalLink className="h-4 w-4 mr-2" /> Portal Stripe
-                                </Button>
-                                {subscription.cancelAtPeriodEnd ? (
-                                    <Button
-                                        onClick={handleReactivateSubscription}
-                                        disabled={reactivating}
-                                        className="bg-green-600 hover:bg-green-700"
-                                    >
-                                        {reactivating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        <RefreshCw className="h-4 w-4 mr-2" /> Reativar Assinatura
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        variant="destructive"
-                                        onClick={handleCancelSubscription}
-                                        disabled={canceling}
-                                    >
-                                        {canceling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinatura
-                                    </Button>
-                                )}
-                            </CardFooter>
-                        </Card>
-                    ) : (
-                        <Card className="max-w-2xl mx-auto">
-                            <CardHeader className="text-center">
-                                <CardTitle>Você não tem uma assinatura ativa</CardTitle>
-                                <CardDescription>
-                                    Escolha um plano na aba "Planos" para começar a usar o sistema.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    Plano atual: <strong>{currentPlan?.name || company?.plan || 'Trial'}</strong>
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
-                </TabsContent>
-
-                {/* INVOICES TAB */}
-                <TabsContent value="invoices" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <FileText className="h-5 w-5" /> Histórico de Faturas
-                            </CardTitle>
-                            <CardDescription>
-                                Suas últimas faturas e pagamentos
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {loadingInvoices ? (
-                                <div className="flex items-center justify-center py-12">
-                                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                                </div>
-                            ) : invoices.length === 0 ? (
-                                <div className="text-center py-12 text-muted-foreground">
-                                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                                    <p>Nenhuma fatura encontrada</p>
-                                </div>
-                            ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Fatura</TableHead>
-                                            <TableHead>Data</TableHead>
-                                            <TableHead>Período</TableHead>
-                                            <TableHead>Valor</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead className="text-right">Ações</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {invoices.map((invoice) => (
-                                            <TableRow key={invoice.id}>
-                                                <TableCell className="font-medium">
-                                                    {invoice.number || invoice.id.slice(-8)}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {formatDate(invoice.created)}
-                                                </TableCell>
-                                                <TableCell className="text-sm text-muted-foreground">
-                                                    {invoice.periodStart && invoice.periodEnd
-                                                        ? `${formatDate(invoice.periodStart)} - ${formatDate(invoice.periodEnd)}`
-                                                        : '-'
-                                                    }
-                                                </TableCell>
-                                                <TableCell className="font-medium">
-                                                    {formatCurrency(invoice.amount, invoice.currency)}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {getStatusBadge(invoice.status)}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        {invoice.invoicePdf && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => window.open(invoice.invoicePdf!, '_blank')}
-                                                                title="Baixar PDF"
-                                                            >
-                                                                <Download className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                        {invoice.hostedUrl && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => window.open(invoice.hostedUrl!, '_blank')}
-                                                                title="Ver detalhes"
-                                                            >
-                                                                <ExternalLink className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* PLANS TAB */}
-                <TabsContent value="plans" className="space-y-6">
-                    {!company?.stripeSubscriptionId && (
-                        <div className="flex items-center justify-center gap-4 pb-4">
-                            <span className={cn("text-sm font-medium", !isAnnual ? "text-slate-900 dark:text-white" : "text-muted-foreground")}>
-                                Mensal
-                            </span>
-                            <Switch
-                                checked={isAnnual}
-                                onCheckedChange={setIsAnnual}
-                            />
-                            <span className={cn("text-sm font-medium", isAnnual ? "text-slate-900 dark:text-white" : "text-muted-foreground")}>
-                                Anual <span className="text-xs text-green-600 font-bold bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full ml-1">Economize até 20%</span>
-                            </span>
-                        </div>
-                    )}
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {plansToShow.map((plan) => {
-                            const price = isAnnual ? plan.prices.annual : plan.prices.monthly;
-                            const isCurrentPlan = company?.plan === plan.id;
-
-                            return (
-                                <Card key={plan.id} className={cn(
-                                    "relative flex flex-col border-slate-200 dark:border-slate-800 transition-all hover:scale-105 duration-300",
-                                    plan.id === 'pro' && "border-violet-500 shadow-xl shadow-violet-500/10 scale-105 z-10",
-                                    isCurrentPlan && "border-green-500 ring-2 ring-green-500/20"
-                                )}>
-                                    {plan.id === 'pro' && !isCurrentPlan && (
-                                        <div className="absolute -top-4 left-0 right-0 flex justify-center">
-                                            <span className="bg-violet-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                                                Mais Popular
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {isCurrentPlan && (
-                                        <div className="absolute -top-4 left-0 right-0 flex justify-center">
-                                            <span className="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                                                Plano Atual
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    <CardHeader>
-                                        <CardTitle className="text-xl">{plan.name}</CardTitle>
-                                        <CardDescription>{plan.description}</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="flex-1 space-y-6">
-                                        <div className="space-y-1">
-                                            <span className="text-4xl font-bold">R$ {price.toFixed(2).replace('.', ',')}</span>
-                                            <span className="text-muted-foreground">/mês</span>
-                                            {isAnnual && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    cobrado anualmente (R$ {(price * 12).toFixed(2)})
+                                    <CardContent className="space-y-6">
+                                        <div className="grid sm:grid-cols-2 gap-4">
+                                            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg text-blue-600">
+                                                        <FileText className="h-5 w-5" />
+                                                    </div>
+                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">Propostas</span>
                                                 </div>
-                                            )}
+                                                <p className="text-2xl font-bold ml-11">{currentPlan?.limits.proposals} <span className="text-sm font-normal text-muted-foreground">/mês</span></p>
+                                            </div>
+
+                                            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg text-indigo-600">
+                                                        <Users className="h-5 w-5" />
+                                                    </div>
+                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">Usuários</span>
+                                                </div>
+                                                <p className="text-2xl font-bold ml-11">{(currentPlan?.limits.users || 1) + (company?.extraUsers || 0)} <span className="text-sm font-normal text-muted-foreground">ativos</span></p>
+                                            </div>
                                         </div>
 
-                                        <ul className="space-y-3 text-sm">
-                                            <li className="flex items-center gap-2">
-                                                <Check className="h-4 w-4 text-green-500" />
-                                                <span>Até <strong>{plan.limits.proposals}</strong> propostas/mês</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Check className="h-4 w-4 text-green-500" />
-                                                <span>Usuários Ilimitados*</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Check className="h-4 w-4 text-green-500" />
-                                                <span>Suporte Prioritário</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Check className="h-4 w-4 text-green-500" />
-                                                <span>Editor Avançado</span>
-                                            </li>
-                                        </ul>
-
-                                        <p className="text-xs text-muted-foreground italic">
-                                            * R$ {plan.prices.extraUser?.toFixed(2)} por usuário adicional.
-                                        </p>
+                                        {subscription.cancelAtPeriodEnd && (
+                                            <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl flex items-start gap-4">
+                                                <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+                                                <div>
+                                                    <h4 className="font-semibold text-red-900 dark:text-red-200">Cancelamento Agendado</h4>
+                                                    <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                                                        Sua assinatura encerra em {subscription.currentPeriodEnd && formatDate(subscription.currentPeriodEnd)}.
+                                                        Até lá, seu acesso continua normal.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </CardContent>
-                                    <CardFooter>
-                                        {isCurrentPlan ? (
-                                            <Button className="w-full" variant="secondary" onClick={handlePortal} disabled={loadingPlan === 'portal'}>
-                                                Gerenciar Assinatura
+                                    <CardFooter className="bg-slate-50 dark:bg-slate-900/50 py-4 flex flex-wrap gap-3 justify-end border-t border-slate-100 dark:border-slate-800">
+                                        {subscription.cancelAtPeriodEnd ? (
+                                            <Button
+                                                onClick={handleReactivateSubscription}
+                                                disabled={reactivating}
+                                                className="bg-green-600 hover:bg-green-700 text-white shadow-sm shadow-green-500/20"
+                                            >
+                                                {reactivating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                <RefreshCw className="h-4 w-4 mr-2" /> Reativar Assinatura
                                             </Button>
                                         ) : (
                                             <Button
-                                                className={cn(
-                                                    "w-full",
-                                                    plan.id === 'pro' ? "bg-violet-600 hover:bg-violet-700" : ""
-                                                )}
-                                                onClick={() => handleSubscribe(plan.id)}
-                                                disabled={!!loadingPlan}
+                                                variant="outline"
+                                                onClick={handleCancelSubscription}
+                                                disabled={canceling}
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-900/30"
                                             >
-                                                {loadingPlan === plan.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                {loadingPlan === plan.id ? 'Processando...' : (company?.stripeSubscriptionId ? 'Mudar Plano' : 'Assinar Agora')}
+                                                {canceling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Cancelar Plano
                                             </Button>
                                         )}
+                                        <Button onClick={handlePortal} disabled={loadingPlan === 'portal'}>
+                                            {loadingPlan === 'portal' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+                                            Gerenciar no Stripe
+                                        </Button>
                                     </CardFooter>
                                 </Card>
-                            );
-                        })}
-                    </div>
-                </TabsContent>
-            </Tabs>
-        </div>
+
+                                {/* Extra Seats Card */}
+                                <Card className="shadow-lg border-slate-200 dark:border-slate-800">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg font-bold">Gerenciar Assentos</CardTitle>
+                                        <CardDescription>Adicione usuários à sua equipe</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        <div className="flex flex-col items-center justify-center py-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                                            <div className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
+                                                {company?.extraUsers || 0}
+                                            </div>
+                                            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Extras Contratados</span>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between bg-white dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-10 w-10 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                                    onClick={() => handleUpdateSeats((company?.extraUsers || 0) - 1)}
+                                                    disabled={!company?.extraUsers || company.extraUsers <= 0}
+                                                >
+                                                    <span className="text-2xl leading-none mb-1">-</span>
+                                                </Button>
+                                                <span className="font-mono text-lg font-medium">
+                                                    {(currentPlan?.limits.users || 1) + (company?.extraUsers || 0)} total
+                                                </span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-10 w-10 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                                    onClick={() => handleUpdateSeats((company?.extraUsers || 0) + 1)}
+                                                >
+                                                    <span className="text-2xl leading-none mb-1">+</span>
+                                                </Button>
+                                            </div>
+                                            <p className="text-center text-xs text-muted-foreground">
+                                                Custo: R$ {(currentPlan?.prices as any).extraUser?.toFixed(2).replace('.', ',') || '0,00'} / usuário extra
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        ) : (
+                            <Card className="max-w-2xl mx-auto text-center py-12 shadow-xl border-slate-200 dark:border-slate-700">
+                                <CardContent>
+                                    <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <AlertTriangle className="h-10 w-10 text-slate-400" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Nenhuma assinatura ativa</h3>
+                                    <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                                        Você está usando o plano <strong>{currentPlan?.name || company?.plan || 'Gratuito'}</strong>.
+                                        Faça um upgrade para desbloquear mais recursos.
+                                    </p>
+                                    <Button size="lg" onClick={() => document.querySelector('[value="plans"]')?.dispatchEvent(new Event('click', { bubbles: true }))} className="bg-violet-600 hover:bg-violet-700">
+                                        Ver Planos Disponíveis
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </TabsContent>
+
+                    {/* INVOICES TAB */}
+                    <TabsContent value="invoices" className="animate-in fade-in-50 duration-500 slide-in-from-bottom-2">
+                        <Card className="shadow-lg border-slate-200 dark:border-slate-800">
+                            <CardHeader>
+                                <CardTitle>Histórico Financeiro</CardTitle>
+                                <CardDescription>Baixe recibos e acompanhe seus pagamentos</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {loadingInvoices ? (
+                                    <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                                        <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+                                        <p className="text-sm text-muted-foreground">Carregando faturas...</p>
+                                    </div>
+                                ) : invoices.length === 0 ? (
+                                    <div className="text-center py-16">
+                                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <FileText className="h-8 w-8 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-lg font-medium text-slate-900 dark:text-white">Sem faturas ainda</h3>
+                                        <p className="text-slate-500">Quando você fizer o primeiro pagamento, ele aparecerá aqui.</p>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                                        <Table>
+                                            <TableHeader className="bg-slate-50 dark:bg-slate-900">
+                                                <TableRow>
+                                                    <TableHead className="w-[100px]">Data</TableHead>
+                                                    <TableHead>Valor</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Período</TableHead>
+                                                    <TableHead className="text-right">Recibo</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {invoices.map((invoice) => (
+                                                    <TableRow key={invoice.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                                                        <TableCell className="font-medium">
+                                                            {formatDate(invoice.created)}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {formatCurrency(invoice.amount, invoice.currency)}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {getStatusBadge(invoice.status)}
+                                                        </TableCell>
+                                                        <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
+                                                            {invoice.periodStart && invoice.periodEnd
+                                                                ? `${formatDate(invoice.periodStart)} - ${formatDate(invoice.periodEnd)}`
+                                                                : '-'
+                                                            }
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            {invoice.invoicePdf && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                                                                    onClick={() => window.open(invoice.invoicePdf!, '_blank')}
+                                                                    title="Baixar PDF"
+                                                                >
+                                                                    <Download className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* PLANS TAB */}
+                    <TabsContent value="plans" className="space-y-8 animate-in fade-in-50 duration-500 slide-in-from-bottom-2">
+                        {!company?.stripeSubscriptionId && (
+                            <div className="flex justify-center">
+                                <div className="inline-flex items-center p-1 bg-white dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <button
+                                        onClick={() => setIsAnnual(false)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-full text-sm font-medium transition-all",
+                                            !isAnnual ? "bg-slate-900 text-white shadow-md" : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                                        )}
+                                    >
+                                        Mensal
+                                    </button>
+                                    <button
+                                        onClick={() => setIsAnnual(true)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2",
+                                            isAnnual ? "bg-slate-900 text-white shadow-md" : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                                        )}
+                                    >
+                                        Anual <span className="text-[10px] font-bold bg-green-500 text-white px-1.5 py-0.5 rounded-full">-20%</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid md:grid-cols-3 gap-8">
+                            {plansToShow.map((plan) => {
+                                const price = isAnnual ? plan.prices.annual : plan.prices.monthly;
+                                const isCurrentPlan = company?.plan === plan.id;
+                                const isPro = plan.id === 'pro';
+
+                                return (
+                                    <div key={plan.id} className="relative group">
+                                        {isPro && (
+                                            <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-500" />
+                                        )}
+                                        <Card className={cn(
+                                            "relative h-full flex flex-col border-slate-200 dark:border-slate-800 transition-all duration-300 rounded-2xl overflow-hidden",
+                                            isPro ? "bg-white dark:bg-slate-900" : "bg-white dark:bg-slate-900",
+                                            isCurrentPlan && "ring-2 ring-green-500 border-green-500"
+                                        )}>
+                                            {isPro && !isCurrentPlan && (
+                                                <div className="bg-violet-600 text-white text-xs font-bold text-center py-1">
+                                                    MAIS POPULAR
+                                                </div>
+                                            )}
+                                            {isCurrentPlan && (
+                                                <div className="bg-green-600 text-white text-xs font-bold text-center py-1">
+                                                    SEU PLANO ATUAL
+                                                </div>
+                                            )}
+
+                                            <CardHeader className="text-center pb-2">
+                                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{plan.name}</h3>
+                                                <p className="text-sm text-slate-500 leading-relaxed min-h-[40px]">{plan.description}</p>
+                                            </CardHeader>
+
+                                            <CardContent className="flex-1 flex flex-col items-center">
+                                                <div className="my-6 text-center">
+                                                    <div className="flex items-center justify-center text-slate-900 dark:text-white">
+                                                        <span className="text-2xl font-semibold mr-1">R$</span>
+                                                        <span className="text-5xl font-extrabold tracking-tight">{Math.floor(price)}</span>
+                                                        <span className="text-xl font-semibold mt-auto mb-2 text-slate-500">,{price.toFixed(2).split('.')[1]}</span>
+                                                    </div>
+                                                    <div className="text-sm text-slate-500 mt-1">
+                                                        por mês {isAnnual && '(faturado anualmente)'}
+                                                    </div>
+                                                </div>
+
+                                                <ul className="space-y-4 text-sm w-full border-t border-slate-100 dark:border-slate-800 pt-6">
+                                                    <li className="flex items-center gap-3">
+                                                        <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                                            <Check className="h-3 w-3 text-green-600" />
+                                                        </div>
+                                                        <span className="text-slate-600 dark:text-slate-300"><strong>{plan.limits.proposals}</strong> propostas/mês</span>
+                                                    </li>
+                                                    <li className="flex items-center gap-3">
+                                                        <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                                            <Check className="h-3 w-3 text-green-600" />
+                                                        </div>
+                                                        <span className="text-slate-600 dark:text-slate-300">Usuários Ilimitados*</span>
+                                                    </li>
+                                                    <li className="flex items-center gap-3">
+                                                        <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                                            <Check className="h-3 w-3 text-green-600" />
+                                                        </div>
+                                                        <span className="text-slate-600 dark:text-slate-300">{isPro ? 'Suporte Prioritário' : 'Suporte por Email'}</span>
+                                                    </li>
+                                                </ul>
+
+
+                                                <p className="text-xs text-slate-400 mt-4 italic">
+                                                    * R$ {(plan.prices as any).extraUser?.toFixed(2)} por usuário adicional.
+                                                </p>
+                                            </CardContent>
+
+                                            <CardFooter className="pt-2 pb-6 px-6">
+                                                {isCurrentPlan ? (
+                                                    <Button className="w-full" variant="outline" onClick={handlePortal} disabled={loadingPlan === 'portal'}>
+                                                        Gerenciar
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        className={cn(
+                                                            "w-full h-12 rounded-xl font-semibold shadow-md transition-all hover:-translate-y-1",
+                                                            isPro
+                                                                ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-violet-500/25"
+                                                                : "bg-slate-900 hover:bg-slate-800 text-white"
+                                                        )}
+                                                        onClick={() => handleSubscribe(plan.id)}
+                                                        disabled={!!loadingPlan}
+                                                    >
+                                                        {loadingPlan === plan.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                        {loadingPlan === plan.id ? 'Processando...' : (company?.stripeSubscriptionId ? `Mudar para ${plan.name}` : 'Começar Agora')}
+                                                    </Button>
+                                                )}
+                                            </CardFooter>
+                                        </Card>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </div>
+        </div >
     );
 }
 
 export default function BillingPage() {
     return (
         <Suspense fallback={
-            <div className="flex h-[50vh] w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex h-screen w-full items-center justify-center bg-slate-50 dark:bg-slate-950">
+                <div className="text-center space-y-4">
+                    <Loader2 className="h-10 w-10 animate-spin text-violet-600 mx-auto" />
+                    <p className="text-muted-foreground font-medium">Carregando informações da assinatura...</p>
+                </div>
             </div>
         }>
             <BillingContent />
