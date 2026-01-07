@@ -92,6 +92,14 @@ export default async function Dashboard() {
                   Configurações
                 </Button>
               </Link>
+              {session?.role === 'admin' && (
+                <Link href="/billing">
+                  <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Assinatura
+                  </Button>
+                </Link>
+              )}
               <form action={logoutAction}>
                 <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20">
                   <LogOut className="mr-2 h-4 w-4" />
@@ -106,8 +114,8 @@ export default async function Dashboard() {
               </Link>
             </div>
           </div>
-        </div>
-      </header>
+        </div >
+      </header >
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Company Setup Warning */}
@@ -273,6 +281,6 @@ export default async function Dashboard() {
           <ProposalListView initialProposals={proposals} />
         </div>
       </main>
-    </div>
+    </div >
   );
 }

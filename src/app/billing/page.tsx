@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2, Check, CreditCard, FileText, Download, ExternalLink, AlertTriangle, RefreshCw, XCircle, Calendar } from 'lucide-react';
+import { Loader2, Check, CreditCard, FileText, Download, ExternalLink, AlertTriangle, RefreshCw, XCircle, Calendar, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSearchParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
@@ -195,6 +195,11 @@ function BillingContent() {
 
     return (
         <div className="container max-w-6xl py-10 space-y-10">
+            <div className="flex justify-start">
+                <Button variant="ghost" size="sm" onClick={() => window.location.href = '/dashboard'}>
+                    <ChevronLeft className="mr-2 h-4 w-4" />  Voltar para Dashboard
+                </Button>
+            </div>
             <div className="text-center space-y-4">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                     Planos e Assinaturas
