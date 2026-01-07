@@ -1,19 +1,48 @@
 'use client';
 
 import { useState } from 'react';
-import { PLANS } from '@/lib/plans';
+import { PLANS, PlanId } from '@/lib/plans';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Check, LogIn, ArrowRight, Zap, Clock, Target, CreditCard, Bell, Link2, ChevronDown, Mail, MessageSquare, BarChart3, FileText, Users, Shield, Palette, Code, Briefcase, Play } from 'lucide-react';
+import { Check, LogIn, ArrowRight, Zap, Clock, Target, CreditCard, Bell, Link2, ChevronDown, Mail, MessageSquare, BarChart3, FileText, Users, Shield, Palette, Code, Briefcase, Play, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function HomePage() {
     const [isAnnual, setIsAnnual] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
     const plansToShow = Object.values(PLANS).filter(p => p.id !== 'trial');
+
+    const handleCheckout = async (planId: PlanId) => {
+        setLoadingPlan(planId);
+        try {
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    planId,
+                    billingPeriod: isAnnual ? 'annual' : 'monthly',
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Erro ao criar checkout');
+            }
+
+            if (data.url) {
+                window.location.href = data.url;
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'Erro ao processar pagamento');
+            setLoadingPlan(null);
+        }
+    };
 
     const faqs = [
         { q: "Como funciona o teste grátis?", a: "Você tem 7 dias para testar todas as funcionalidades sem pagar nada. Não pedimos cartão de crédito no cadastro. Depois do teste, escolhe se quer continuar e qual plano faz mais sentido." },
@@ -339,11 +368,18 @@ export default function HomePage() {
                                                     <span className="text-slate-500">,90</span>
                                                 </div>
                                                 <span className="text-sm text-slate-500 mb-6">por mês {isAnnual && <span className="block text-xs">(faturado anualmente)</span>}</span>
-                                                <Link href="/login" className="w-full max-w-xs">
-                                                    <Button size="lg" className={cn("w-full rounded-full", plan.id === 'pro' ? "bg-violet-600 hover:bg-violet-700 text-white" : "")}>
-                                                        Começar Agora
-                                                    </Button>
-                                                </Link>
+                                                <Button
+                                                    size="lg"
+                                                    className={cn("w-full max-w-xs rounded-full", plan.id === 'pro' ? "bg-violet-600 hover:bg-violet-700 text-white" : "")}
+                                                    onClick={() => handleCheckout(plan.id as PlanId)}
+                                                    disabled={loadingPlan !== null}
+                                                >
+                                                    {loadingPlan === plan.id ? (
+                                                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Processando...</>
+                                                    ) : (
+                                                        'Começar Agora'
+                                                    )}
+                                                </Button>
                                             </CardContent>
                                             <CardContent className="pt-8 pb-8 px-8">
                                                 <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
