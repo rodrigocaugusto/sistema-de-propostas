@@ -231,4 +231,35 @@ export async function reactivateSubscription() {
         return { success: false, error: error.message || 'Erro ao reativar assinatura' };
     }
 }
+// Update extra seats
+export async function manageExtraSeatsAction(newQuantity: number) {
+    const session = await getSession();
+    if (!session || !session.companyId || session.role !== 'admin') {
+        throw new Error("Acesso negado.");
+    }
 
+    if (newQuantity < 0) {
+        throw new Error("Quantidade inválida.");
+    }
+
+    try {
+        // Update local DB
+        await prisma.company.update({
+            where: { id: session.companyId },
+            data: { extraUsers: newQuantity }
+        });
+
+        // TODO: Integrate with Stripe Subscription Items to charge for these seats
+        // This requires a valid PRICE_ID for the "Extra User" product in Stripe.
+        // Example:
+        // const company = await prisma.company.findUnique({ where: { id: session.companyId } });
+        // if (company.stripeSubscriptionId) {
+        //    // Logic to find 'extra-seat' item and update quantity
+        // }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Manage seats error:', error);
+        return { success: false, error: 'Erro ao atualizar assentos.' };
+    }
+}

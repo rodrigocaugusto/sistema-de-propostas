@@ -19,7 +19,7 @@ export const PLANS = {
         description: 'Ideal para quem está começando',
         limits: {
             proposals: 15, // Per month
-            users: Infinity // Extras cost R$ 15,00
+            users: 1 // 1 user included
         },
         prices: {
             monthly: 39.90,
@@ -33,7 +33,7 @@ export const PLANS = {
         description: 'Para agências e autônomos estabelecidos',
         limits: {
             proposals: 100, // Per month
-            users: Infinity // Extras cost R$ 15,00
+            users: 3 // 3 users included
         },
         prices: {
             monthly: 89.90,
@@ -47,7 +47,7 @@ export const PLANS = {
         description: 'Alto volume e máxima performance',
         limits: {
             proposals: 500, // Per month
-            users: Infinity // Extras cost R$ 15,00
+            users: 10 // 10 users included
         },
         prices: {
             monthly: 169.00,

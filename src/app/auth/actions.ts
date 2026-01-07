@@ -124,6 +124,29 @@ export async function createUser(data: {
             return { success: false, error: 'Este e-mail já está em uso.' };
         }
 
+        // Check limits
+        if (session.companyId) {
+            // We need to fetch company to know the plan and extraUsers
+            // and count existing users.
+            const company = await prisma.company.findUnique({
+                where: { id: session.companyId },
+                include: { users: true }
+            });
+
+            if (company) {
+                const { getPlanUserLimit } = await import('@/lib/plans');
+                const planLimit = getPlanUserLimit(company.plan);
+                const totalLimit = planLimit + (company.extraUsers || 0);
+
+                if (company.users.length >= totalLimit) {
+                    return {
+                        success: false,
+                        error: `Limite de usuários atingido (${totalLimit}). Faça upgrade ou compre licenças extras.`
+                    };
+                }
+            }
+        }
+
         const hashedPassword = await hashPassword(data.password);
 
         // Ensure we link the user to the creator's company (unless super admin creating for a specific company, but let's keep it simple: admin creates for their own company)

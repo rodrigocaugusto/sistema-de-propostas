@@ -9,13 +9,14 @@ import {
     getSubscriptionDetails,
     getInvoices,
     cancelSubscription,
-    reactivateSubscription
+    reactivateSubscription,
+    manageExtraSeatsAction
 } from './actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2, Check, CreditCard, FileText, Download, ExternalLink, AlertTriangle, RefreshCw, XCircle, Calendar, ChevronLeft } from 'lucide-react';
+import { Loader2, Check, CreditCard, FileText, Download, ExternalLink, AlertTriangle, RefreshCw, XCircle, Calendar, ChevronLeft, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSearchParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
@@ -91,6 +92,21 @@ function BillingContent() {
         } catch (error) {
             toast.error("Erro ao iniciar checkout. Tente novamente.");
             setLoadingPlan(null);
+        }
+    };
+
+    const handleUpdateSeats = async (newQuantity: number) => {
+        if (newQuantity < 0) return;
+        try {
+            const result = await manageExtraSeatsAction(newQuantity);
+            if (result.success) {
+                toast.success('Licenças atualizadas com sucesso!');
+                loadData();
+            } else {
+                toast.error(result.error || 'Erro ao atualizar');
+            }
+        } catch {
+            toast.error('Erro ao atualizar licenças');
         }
     };
 
@@ -253,24 +269,69 @@ function BillingContent() {
                                     </div>
                                     {subscription.currentPeriodEnd && (
                                         <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg col-span-2">
-                                            <p className="text-sm text-muted-foreground">Próxima cobrança</p>
-                                            <p className="text-lg font-bold">{formatDate(subscription.currentPeriodEnd)}</p>
+                                            <p className="text-sm text-muted-foreground">Renova em</p>
+                                            <p className="font-medium">
+                                                {formatDate(subscription.currentPeriodEnd)}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
 
-                                {subscription.cancelAtPeriodEnd && (
-                                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-3">
-                                        <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                                {/* Extra Seats Management */}
+                                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg space-y-4">
+                                    <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="font-medium text-amber-800 dark:text-amber-200">Assinatura será cancelada</p>
-                                            <p className="text-sm text-amber-700 dark:text-amber-300">
-                                                Sua assinatura será encerrada em {subscription.currentPeriodEnd && formatDate(subscription.currentPeriodEnd)}.
-                                                Você pode reativar a qualquer momento antes dessa data.
+                                            <h4 className="font-semibold flex items-center gap-2">
+                                                <Users className="h-4 w-4 text-indigo-500" />
+                                                Licenças de Usuário
+                                            </h4>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                Total de vagas: <strong>{(currentPlan?.limits.users || 1) + (company?.extraUsers || 0)}</strong>
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                ({currentPlan?.limits.users || 1} do plano + {company?.extraUsers || 0} extras)
                                             </p>
                                         </div>
+                                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg">
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => handleUpdateSeats((company?.extraUsers || 0) - 1)}
+                                                disabled={!company?.extraUsers || company.extraUsers <= 0}
+                                            >
+                                                -
+                                            </Button>
+                                            <span className="font-mono w-8 text-center">{company?.extraUsers || 0}</span>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => handleUpdateSeats((company?.extraUsers || 0) + 1)}
+                                            >
+                                                +
+                                            </Button>
+                                        </div>
                                     </div>
-                                )}
+                                    <p className="text-xs text-slate-500">
+                                        Custo adicional: R$ {(currentPlan?.prices as any).extraUser?.toFixed(2).replace('.', ',') || '0,00'} / usuário mês
+                                    </p>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                                    {subscription.cancelAtPeriodEnd && (
+                                        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-3">
+                                            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                                            <div>
+                                                <p className="font-medium text-amber-800 dark:text-amber-200">Assinatura será cancelada</p>
+                                                <p className="text-sm text-amber-700 dark:text-amber-300">
+                                                    Sua assinatura será encerrada em {subscription.currentPeriodEnd && formatDate(subscription.currentPeriodEnd)}.
+                                                    Você pode reativar a qualquer momento antes dessa data.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </CardContent>
                             <CardFooter className="flex flex-wrap gap-3">
                                 <Button variant="outline" onClick={handlePortal} disabled={loadingPlan === 'portal'}>

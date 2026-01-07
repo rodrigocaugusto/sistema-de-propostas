@@ -40,6 +40,7 @@ model Company {
   
   plan          String    @default("free")
   status        String    @default("active") // active, suspended
+  extraUsers    Int       @default(0) // Additional paid seats
   
   stripeCustomerId     String?
   stripeSubscriptionId String?
