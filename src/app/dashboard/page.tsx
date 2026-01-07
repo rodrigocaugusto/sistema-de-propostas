@@ -4,12 +4,18 @@ import { redirect } from "next/navigation";
 import { fetchCompany, fetchProposals, logoutAction } from "@/app/actions";
 import { getSession } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Settings, FileText, CheckCircle, XCircle, Clock, Package, TrendingUp, TrendingDown, DollarSign, BarChart3, ArrowUpRight, Sparkles, Users, Pencil, User, LogOut, Shield, ClipboardList } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Settings, FileText, CheckCircle, XCircle, Clock, Package, TrendingUp, DollarSign, BarChart3, Users, User, LogOut, Shield, ClipboardList } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ProposalListView } from "@/components/proposal-list-view";
+import { DateRangeFilter } from "@/components/date-range-filter";
 
-export default async function Dashboard() {
+type DashboardProps = {
+  searchParams: Promise<{ period?: string }>;
+};
+
+export default async function Dashboard(props: DashboardProps) {
+  const searchParams = await props.searchParams;
   const session = await getSession();
 
   if (!session) {
@@ -17,7 +23,44 @@ export default async function Dashboard() {
   }
 
   const company = await fetchCompany();
-  const proposals = await fetchProposals();
+  let proposals = await fetchProposals();
+  const period = searchParams.period || 'all';
+
+  // Date Filtering Logic
+  const now = new Date();
+  proposals = proposals.filter(p => {
+    if (period === 'all') return true;
+
+    const date = new Date(p.createdAt);
+
+    if (period === 'today') {
+      return date.getDate() === now.getDate() &&
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear();
+    }
+
+    if (period === 'month') {
+      return date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear();
+    }
+
+    if (period === '7days') {
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(now.getDate() - 7);
+      // Reset hours to compare correctly from start of day if needed, but simplified here:
+      return date >= sevenDaysAgo;
+    }
+
+    if (period === 'week') {
+      // Assume week starts on Sunday
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return date >= startOfWeek;
+    }
+
+    return true;
+  });
 
   // Calculate stats
   const acceptedProposals = proposals.filter(p => p.status === 'accepted');
@@ -134,6 +177,16 @@ export default async function Dashboard() {
           </div>
         )}
 
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Visão Geral</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+              Acompanhe o desempenho das suas propostas comerciais
+            </p>
+          </div>
+          <DateRangeFilter />
+        </div>
+
         {/* Stats Cards */}
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {/* Total Value Card - #029DAF Teal */}
@@ -168,7 +221,7 @@ export default async function Dashboard() {
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
                 <FileText className="h-3 w-3" />
-                {proposals.length} propostas no total
+                {proposals.length} propostas no período
               </p>
             </CardContent>
           </Card>
@@ -270,12 +323,6 @@ export default async function Dashboard() {
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Propostas Recentes</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">Acompanhe o status das suas negociações</p>
             </div>
-            <Link href="/proposals/new">
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Proposta
-              </Button>
-            </Link>
           </div>
 
           <ProposalListView initialProposals={proposals} />
