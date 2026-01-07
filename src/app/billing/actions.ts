@@ -86,3 +86,149 @@ export async function createCustomerPortalSession() {
 
     return { url: portalSession.url };
 }
+
+// Get current subscription details
+export async function getSubscriptionDetails() {
+    const session = await getSession();
+    if (!session || !session.companyId) {
+        throw new Error("Unauthorized");
+    }
+
+    const company = await prisma.company.findUnique({
+        where: { id: session.companyId },
+        select: {
+            stripeSubscriptionId: true,
+            stripeCustomerId: true,
+            plan: true,
+            status: true
+        }
+    });
+
+    if (!company?.stripeSubscriptionId) {
+        return {
+            hasSubscription: false,
+            plan: company?.plan || 'trial',
+            status: company?.status || 'active'
+        };
+    }
+
+    try {
+        const subscription = await stripe.subscriptions.retrieve(company.stripeSubscriptionId);
+
+        return {
+            hasSubscription: true,
+            id: subscription.id,
+            status: subscription.status,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            currentPeriodEnd: new Date((subscription as any).current_period_end * 1000).toISOString(),
+            currentPeriodStart: new Date((subscription as any).current_period_start * 1000).toISOString(),
+            plan: company.plan,
+            companyStatus: company.status
+        };
+    } catch (error) {
+        console.error('Get subscription details error:', error);
+        return {
+            hasSubscription: false,
+            plan: company.plan || 'trial',
+            status: company.status || 'active'
+        };
+    }
+}
+
+// Get invoices for current company
+export async function getInvoices() {
+    const session = await getSession();
+    if (!session || !session.companyId) {
+        throw new Error("Unauthorized");
+    }
+
+    const company = await prisma.company.findUnique({
+        where: { id: session.companyId },
+        select: { stripeCustomerId: true }
+    });
+
+    if (!company?.stripeCustomerId) {
+        return [];
+    }
+
+    try {
+        const invoices = await stripe.invoices.list({
+            customer: company.stripeCustomerId,
+            limit: 24, // Last 24 invoices
+        });
+
+        return invoices.data.map(inv => ({
+            id: inv.id,
+            number: inv.number,
+            status: inv.status,
+            amount: (inv.amount_paid || 0) / 100,
+            currency: inv.currency,
+            created: new Date(inv.created * 1000).toISOString(),
+            periodStart: inv.period_start ? new Date(inv.period_start * 1000).toISOString() : null,
+            periodEnd: inv.period_end ? new Date(inv.period_end * 1000).toISOString() : null,
+            invoicePdf: inv.invoice_pdf,
+            hostedUrl: inv.hosted_invoice_url,
+        }));
+    } catch (error) {
+        console.error('Get invoices error:', error);
+        return [];
+    }
+}
+
+// Cancel current subscription
+export async function cancelSubscription() {
+    const session = await getSession();
+    if (!session || !session.companyId) {
+        throw new Error("Unauthorized");
+    }
+
+    const company = await prisma.company.findUnique({
+        where: { id: session.companyId },
+        select: { stripeSubscriptionId: true }
+    });
+
+    if (!company?.stripeSubscriptionId) {
+        return { success: false, error: 'Você não tem uma assinatura ativa' };
+    }
+
+    try {
+        // Cancel at period end
+        await stripe.subscriptions.update(company.stripeSubscriptionId, {
+            cancel_at_period_end: true
+        });
+
+        return { success: true, message: 'Sua assinatura será cancelada ao final do período atual' };
+    } catch (error: any) {
+        console.error('Cancel subscription error:', error);
+        return { success: false, error: error.message || 'Erro ao cancelar assinatura' };
+    }
+}
+
+// Reactivate subscription (if set to cancel at period end)
+export async function reactivateSubscription() {
+    const session = await getSession();
+    if (!session || !session.companyId) {
+        throw new Error("Unauthorized");
+    }
+
+    const company = await prisma.company.findUnique({
+        where: { id: session.companyId },
+        select: { stripeSubscriptionId: true }
+    });
+
+    if (!company?.stripeSubscriptionId) {
+        return { success: false, error: 'Você não tem uma assinatura' };
+    }
+
+    try {
+        await stripe.subscriptions.update(company.stripeSubscriptionId, {
+            cancel_at_period_end: false
+        });
+
+        return { success: true, message: 'Assinatura reativada com sucesso!' };
+    } catch (error: any) {
+        console.error('Reactivate subscription error:', error);
+        return { success: false, error: error.message || 'Erro ao reativar assinatura' };
+    }
+}
+

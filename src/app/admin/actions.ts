@@ -110,3 +110,102 @@ export async function toggleCompanyStatus(companyId: string, currentStatus: stri
     revalidatePath('/admin');
     return { success: true };
 }
+
+// Cancel Stripe subscription for a company
+export async function cancelCompanySubscription(companyId: string) {
+    await checkSuperAdmin();
+
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { stripeSubscriptionId: true }
+    });
+
+    if (!company?.stripeSubscriptionId) {
+        return { success: false, error: 'Esta empresa não tem assinatura ativa no Stripe' };
+    }
+
+    try {
+        const { getStripe } = await import('@/lib/stripe');
+        const stripe = getStripe();
+
+        // Cancel at period end (user keeps access until end of billing cycle)
+        await stripe.subscriptions.update(company.stripeSubscriptionId, {
+            cancel_at_period_end: true
+        });
+
+        revalidatePath('/admin');
+        return { success: true, message: 'Assinatura será cancelada ao final do período' };
+    } catch (error: any) {
+        console.error('Cancel subscription error:', error);
+        return { success: false, error: error.message || 'Erro ao cancelar assinatura' };
+    }
+}
+
+// Reactivate a canceled subscription (if still within billing period)
+export async function reactivateCompanySubscription(companyId: string) {
+    await checkSuperAdmin();
+
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { stripeSubscriptionId: true }
+    });
+
+    if (!company?.stripeSubscriptionId) {
+        return { success: false, error: 'Esta empresa não tem assinatura no Stripe' };
+    }
+
+    try {
+        const { getStripe } = await import('@/lib/stripe');
+        const stripe = getStripe();
+
+        // Reactivate by removing cancel_at_period_end
+        await stripe.subscriptions.update(company.stripeSubscriptionId, {
+            cancel_at_period_end: false
+        });
+
+        // Also reactivate status in DB
+        await prisma.company.update({
+            where: { id: companyId },
+            data: { status: 'active' }
+        });
+
+        revalidatePath('/admin');
+        return { success: true, message: 'Assinatura reativada com sucesso' };
+    } catch (error: any) {
+        console.error('Reactivate subscription error:', error);
+        return { success: false, error: error.message || 'Erro ao reativar assinatura' };
+    }
+}
+
+// Get subscription details from Stripe
+export async function getCompanySubscriptionDetails(companyId: string) {
+    await checkSuperAdmin();
+
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { stripeSubscriptionId: true, stripeCustomerId: true }
+    });
+
+    if (!company?.stripeSubscriptionId) {
+        return null;
+    }
+
+    try {
+        const { getStripe } = await import('@/lib/stripe');
+        const stripe = getStripe();
+
+        const subscription = await stripe.subscriptions.retrieve(company.stripeSubscriptionId);
+
+        return {
+            id: subscription.id,
+            status: subscription.status,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            currentPeriodEnd: new Date((subscription as any).current_period_end * 1000).toISOString(),
+            currentPeriodStart: new Date((subscription as any).current_period_start * 1000).toISOString(),
+        };
+    } catch (error) {
+        console.error('Get subscription details error:', error);
+        return null;
+    }
+}
+

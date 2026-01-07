@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCompanies, toggleCompanyStatus, createCompany } from './actions';
+import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription } from './actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, ArrowLeft } from 'lucide-react';
+import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/app/auth/actions';
 import { useRouter } from 'next/navigation';
@@ -29,6 +29,8 @@ interface Company {
     userCount: number;
     proposalCount: number;
     createdAt: string;
+    stripeSubscriptionId?: string | null;
+    stripeCustomerId?: string | null;
 }
 
 export default function AdminDashboard() {
@@ -105,6 +107,37 @@ export default function AdminDashboard() {
             loadData();
         } catch {
             toast.error("Erro ao alterar status");
+        }
+    };
+
+    const handleCancelSubscription = async (id: string, companyName: string) => {
+        if (!confirm(`Deseja cancelar a assinatura de "${companyName}"? A empresa terá acesso até o final do período pago.`)) {
+            return;
+        }
+        try {
+            const result = await cancelCompanySubscription(id);
+            if (result.success) {
+                toast.success(result.message);
+                loadData();
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao cancelar assinatura");
+        }
+    };
+
+    const handleReactivateSubscription = async (id: string) => {
+        try {
+            const result = await reactivateCompanySubscription(id);
+            if (result.success) {
+                toast.success(result.message);
+                loadData();
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao reativar assinatura");
         }
     };
 
@@ -269,6 +302,7 @@ export default function AdminDashboard() {
                                 <TableHead>Responsável</TableHead>
                                 <TableHead>Plano</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Assinatura</TableHead>
                                 <TableHead className="text-right">Métricas</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
@@ -276,7 +310,7 @@ export default function AdminDashboard() {
                         <TableBody>
                             {filteredCompanies.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                                    <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                                         Nenhuma empresa encontrada
                                     </TableCell>
                                 </TableRow>
@@ -298,6 +332,17 @@ export default function AdminDashboard() {
                                                 {company.status === 'active' ? 'Ativo' : 'Suspenso'}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell>
+                                            {company.stripeSubscriptionId ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 border-0">
+                                                        <CreditCard className="h-3 w-3 mr-1" /> Stripe
+                                                    </Badge>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">Sem assinatura</span>
+                                            )}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <div className="text-xs text-slate-500">
                                                 <span className="font-medium text-slate-900 dark:text-slate-300">{company.userCount}</span> usuários
@@ -307,14 +352,39 @@ export default function AdminDashboard() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleToggleStatus(company.id, company.status)}
-                                                className={company.status === 'active' ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-green-500 hover:text-green-600 hover:bg-green-50'}
-                                            >
-                                                {company.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-                                            </Button>
+                                            <div className="flex items-center justify-end gap-1">
+                                                {company.stripeSubscriptionId && (
+                                                    <>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleCancelSubscription(company.id, company.name)}
+                                                            className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+                                                            title="Cancelar Assinatura"
+                                                        >
+                                                            <XCircle className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleReactivateSubscription(company.id)}
+                                                            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                                                            title="Reativar Assinatura"
+                                                        >
+                                                            <RefreshCw className="h-4 w-4" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleToggleStatus(company.id, company.status)}
+                                                    className={company.status === 'active' ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-green-500 hover:text-green-600 hover:bg-green-50'}
+                                                    title={company.status === 'active' ? 'Suspender Empresa' : 'Ativar Empresa'}
+                                                >
+                                                    {company.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
