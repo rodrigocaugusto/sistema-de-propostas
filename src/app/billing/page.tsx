@@ -85,7 +85,14 @@ function BillingContent() {
     const handleSubscribe = async (planId: string) => {
         setLoadingPlan(planId);
         try {
-            const result = await createCheckoutSession(planId, isAnnual ? 'annual' : 'monthly');
+            const result = await createCheckoutSession(planId, isAnnual ? 'annual' : 'monthly') as { url?: string; error?: string };
+
+            if (result.error) {
+                toast.error(result.error);
+                setLoadingPlan(null);
+                return;
+            }
+
             if (result.url) {
                 window.location.href = result.url;
             }

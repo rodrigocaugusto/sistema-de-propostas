@@ -8,51 +8,49 @@ import { PLANS, PlanId, getStripePriceId } from '@/lib/plans';
 import { redirect } from 'next/navigation';
 
 export async function createCheckoutSession(planId: string, interval: 'monthly' | 'annual') {
-    const session = await getSession();
-    if (!session || !session.companyId || session.role !== 'admin') {
-        throw new Error("Acesso negado. Apenas administradores.");
-    }
-
-    const user = await prisma.user.findUnique({
-        where: { id: session.id }
-    });
-
-    // Validate Plan
-    const plan = PLANS[planId as PlanId];
-    if (!plan || plan.id === 'trial') {
-        throw new Error("Invalid plan selected");
-    }
-
-    // Get the Stripe Price ID
-    const stripePriceId = getStripePriceId(planId, interval);
-
-    // DEBUG: Log detalhado para produção
-    if (!stripePriceId) {
-        console.error(`[Checkout Error] No Stripe price ID found for plan: ${planId}, interval: ${interval}`);
-        console.error(`[Environment] Environment variables check:`, {
-            BASIC_MONTHLY: !!process.env.STRIPE_PRICE_BASIC_MONTHLY,
-            BASIC_ANNUAL: !!process.env.STRIPE_PRICE_BASIC_ANNUAL,
-            PRO_MONTHLY: !!process.env.STRIPE_PRICE_PRO_MONTHLY,
-            PRO_ANNUAL: !!process.env.STRIPE_PRICE_PRO_ANNUAL,
-            ENTERPRISE_MONTHLY: !!process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
-            ENTERPRISE_ANNUAL: !!process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL
-        });
-        throw new Error(`Erro de configuração: Preço não encontrado para plano ${planId} (${interval}). Contate o suporte.`);
-    }
-
-    console.log(`[Checkout] Creating session for user ${session.id}, plan ${planId}, price ${stripePriceId}`);
-
-    // Get or create Stripe customer
-    let customerId: string | undefined;
-    const company = await prisma.company.findUnique({
-        where: { id: session.companyId }
-    });
-
-    if (company?.stripeCustomerId) {
-        customerId = company.stripeCustomerId;
-    }
-
     try {
+        const session = await getSession();
+        if (!session || !session.companyId || session.role !== 'admin') {
+            return { error: "Acesso negado. Apenas administradores." };
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: session.id }
+        });
+
+        // Validate Plan
+        const plan = PLANS[planId as PlanId];
+        if (!plan || plan.id === 'trial') {
+            return { error: "Plano inválido selecionado" };
+        }
+
+        // Get the Stripe Price ID
+        const stripePriceId = getStripePriceId(planId, interval);
+
+        // DEBUG: Log detalhado para produção
+        if (!stripePriceId) {
+            console.error(`[Checkout Error] No Stripe price ID found for plan: ${planId}, interval: ${interval}`);
+            // Logar status das variaveis de ambiente
+            console.error(`[Environment] Environment variables check (keys exist?):`, {
+                BASIC_MONTHLY: !!process.env.STRIPE_PRICE_BASIC_MONTHLY,
+                PRO_MONTHLY: !!process.env.STRIPE_PRICE_PRO_MONTHLY,
+                ENTERPRISE_MONTHLY: !!process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
+            });
+            return { error: `Erro de configuração: Preço não encontrado para plano ${planId} (${interval}). Contate o suporte.` };
+        }
+
+        console.log(`[Checkout] Creating session for user ${session.id}, plan ${planId}, price ${stripePriceId}`);
+
+        // Get or create Stripe customer
+        let customerId: string | undefined;
+        const company = await prisma.company.findUnique({
+            where: { id: session.companyId }
+        });
+
+        if (company?.stripeCustomerId) {
+            customerId = company.stripeCustomerId;
+        }
+
         // Create Checkout Session using Stripe Price ID
         const checkoutSession = await stripe.checkout.sessions.create({
             mode: 'subscription',
@@ -77,14 +75,13 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
 
         if (!checkoutSession.url) {
             console.error('[Checkout Error] Stripe session created but no URL:', checkoutSession.id);
-            throw new Error("Failed to create checkout session URL");
+            return { error: "Falha ao criar sessão de checkout (URL ausente)" };
         }
 
         return { url: checkoutSession.url };
     } catch (error: any) {
         console.error('[Checkout Stripe Error] Full error:', error);
-        // Retornar mensagem amigável mas com detalhes técnicos se possível
-        throw new Error(`Erro Stripe: ${error.message} (Code: ${error.code || 'unknown'})`);
+        return { error: `Erro Stripe: ${error.message}` };
     }
 }
 
