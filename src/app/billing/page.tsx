@@ -89,8 +89,9 @@ function BillingContent() {
             if (result.url) {
                 window.location.href = result.url;
             }
-        } catch (error) {
-            toast.error("Erro ao iniciar checkout. Tente novamente.");
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || "Erro ao iniciar checkout. Tente novamente.");
             setLoadingPlan(null);
         }
     };
