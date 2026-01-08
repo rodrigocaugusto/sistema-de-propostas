@@ -5,10 +5,10 @@ import { fetchCompany, fetchProposals, logoutAction } from "@/app/actions";
 import { getSession } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Settings, FileText, CheckCircle, XCircle, Clock, Package, TrendingUp, DollarSign, BarChart3, Users, User, LogOut, Shield, ClipboardList } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { FileText, CheckCircle, XCircle, Clock, TrendingUp, DollarSign, BarChart3 } from "lucide-react";
 import { ProposalListView } from "@/components/proposal-list-view";
 import { DateRangeFilter } from "@/components/date-range-filter";
+import { AppHeader } from "@/components/app-header";
 
 type DashboardProps = {
   searchParams: Promise<{ period?: string }>;
@@ -84,83 +84,9 @@ export default async function Dashboard(props: DashboardProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <img
-                src="/system-logo.png"
-                alt="Sistema de Propostas"
-                className="h-10 w-auto object-contain dark:invert"
-              />
-            </div>
-            <div className="flex gap-3 items-center">
-              <Link href="/profile">
-                <Button variant="ghost" size="icon" className="text-slate-600 dark:text-slate-400">
-                  <User className="h-4 w-4" />
-                </Button>
-              </Link>
-              <ThemeToggle />
-              {session?.role === 'admin' && (
-                <Link href="/audit">
-                  <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20">
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    Auditoria
-                  </Button>
-                </Link>
-              )}
-              {session?.isSuperAdmin && (
-                <Link href="/admin">
-                  <Button variant="ghost" size="sm" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/20">
-                    <Shield className="mr-2 h-4 w-4" />
-                    Super Admin
-                  </Button>
-                </Link>
-              )}
-              <Link href="/clients">
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">
-                  <Users className="mr-2 h-4 w-4" />
-                  Clientes
-                </Button>
-              </Link>
-              <Link href="/products">
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">
-                  <Package className="mr-2 h-4 w-4" />
-                  Produtos
-                </Button>
-              </Link>
-              <Link href="/settings">
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Configurações
-                </Button>
-              </Link>
-              {session?.role === 'admin' && (
-                <Link href="/billing">
-                  <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">
-                    <DollarSign className="mr-2 h-4 w-4" />
-                    Assinatura
-                  </Button>
-                </Link>
-              )}
-              <form action={logoutAction}>
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sair
-                </Button>
-              </form>
-              <Link href="/proposals/new">
-                <Button size="sm" className="bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700 shadow-lg shadow-violet-500/25">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova Proposta
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div >
-      </header >
+      <AppHeader session={session} logoutAction={logoutAction} />
 
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* Company Setup Warning */}
         {!company && (
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white shadow-xl shadow-orange-500/25">

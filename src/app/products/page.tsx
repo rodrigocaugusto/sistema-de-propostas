@@ -1,11 +1,10 @@
 
 import { fetchProducts, logoutAction } from "@/app/actions";
+import { getSession } from "@/lib/auth";
 import { ProductsManager } from "@/components/products-manager";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/theme-toggle";
-import Link from "next/link";
-import { ChevronLeft, Package, RefreshCw, DollarSign, ShoppingBag, Layers, LogOut } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { RefreshCw, DollarSign, ShoppingBag, Layers } from "lucide-react";
 
 interface ProductData {
     id: string;
@@ -16,6 +15,7 @@ interface ProductData {
 }
 
 export default async function ProductsPage() {
+    const session = await getSession();
     const products: ProductData[] = await fetchProducts();
 
     const totalProducts = products.length;
@@ -31,41 +31,16 @@ export default async function ProductsPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-            {/* Header */}
-            <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
-                <div className="max-w-7xl mx-auto px-6 py-4">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <Link href="/dashboard">
-                                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">
-                                    <ChevronLeft className="mr-2 h-4 w-4" />
-                                    Dashboard
-                                </Button>
-                            </Link>
-                            <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
-                                    <Package className="h-5 w-5 text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">Produtos & Serviços</h1>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Gerencie seu catálogo</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <ThemeToggle />
-                            <form action={logoutAction}>
-                                <Button variant="ghost" size="icon" className="text-slate-600 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20">
-                                    <LogOut className="h-4 w-4" />
-                                </Button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <PageHeader
+                title="Produtos & Serviços"
+                subtitle="Gerencie seu catálogo"
+                iconName="package"
+                iconGradient="from-purple-500 to-pink-600"
+                session={session}
+                logoutAction={logoutAction}
+            />
 
-            <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
                 {/* Stats */}
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     {/* Total - #029DAF Teal */}

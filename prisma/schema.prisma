@@ -14,6 +14,7 @@ model User {
   name          String
   password      String    // Hashed password
   phone         String?
+  avatarUrl     String?   // User profile photo URL
   role          String    @default("admin") // "admin" (company admin) or "member" (company user)
   isSuperAdmin  Boolean   @default(false) // System Owner
   companyId     String?   // User belongs to a company

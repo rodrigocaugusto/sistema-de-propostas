@@ -82,6 +82,7 @@ export async function login(email: string, password: string, honeypot?: string):
             companyId: user.companyId || undefined,
             isSuperAdmin: user.isSuperAdmin,
             phone: (user as any).phone,
+            avatarUrl: (user as any).avatarUrl,
         });
 
         await setSession(token);
@@ -200,6 +201,7 @@ export async function updateUser(
         name?: string;
         email?: string;
         phone?: string;
+        avatarUrl?: string | null;
         role?: string;
         isActive?: boolean;
     }
@@ -224,7 +226,7 @@ export async function updateUser(
             return { success: false, error: 'Acesso negado' };
         }
 
-        // Non-admins can only update their own name/phone
+        // Non-admins can only update their own name/phone/avatar
         if (session.role !== 'admin' && (data.role || data.isActive !== undefined)) {
             return { success: false, error: 'Acesso negado para alterar permissões' };
         }
@@ -246,7 +248,8 @@ export async function updateUser(
             where: { id: userId },
             data: {
                 ...(data.name && { name: data.name }),
-                ...(data.phone && { phone: data.phone }),
+                ...(data.phone !== undefined && { phone: data.phone }),
+                ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
                 ...(data.email && { email: data.email.toLowerCase() }),
                 ...(data.role && { role: data.role }),
                 ...(data.isActive !== undefined && { isActive: data.isActive }),
@@ -446,6 +449,7 @@ export async function createTrialAccount(data: {
             companyId: result.company.id,
             isSuperAdmin: result.user.isSuperAdmin,
             phone: null,
+            avatarUrl: null,
         });
 
         await setSession(token);

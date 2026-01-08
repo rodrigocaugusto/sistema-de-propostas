@@ -547,14 +547,14 @@ function BillingContent() {
 
                                             <CardContent className="flex-1 flex flex-col items-center">
                                                 <div className="my-6 text-center">
-                                                    <div className="flex items-center justify-center text-slate-900 dark:text-white">
-                                                        <span className="text-2xl font-semibold mr-1">R$</span>
-                                                        <span className="text-5xl font-extrabold tracking-tight">{Math.floor(price)}</span>
-                                                        <span className="text-xl font-semibold mt-auto mb-2 text-slate-500">,{price.toFixed(2).split('.')[1]}</span>
+                                                    <div className="flex items-baseline gap-1 justify-center">
+                                                        <span className="text-sm text-slate-500">R$</span>
+                                                        <span className="text-5xl font-extrabold text-slate-900 dark:text-white">{price.toFixed(0)}</span>
+                                                        <span className="text-slate-500">,90</span>
                                                     </div>
-                                                    <div className="text-sm text-slate-500 mt-1">
-                                                        por mês {isAnnual && '(faturado anualmente)'}
-                                                    </div>
+                                                    <span className="text-sm text-slate-500 mt-1 block">
+                                                        por mês {isAnnual && <span className="block text-xs">(faturado anualmente)</span>}
+                                                    </span>
                                                 </div>
 
                                                 <ul className="space-y-4 text-sm w-full border-t border-slate-100 dark:border-slate-800 pt-6">
