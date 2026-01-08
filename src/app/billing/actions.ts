@@ -4,7 +4,7 @@
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
-import { PLANS, PlanId } from '@/lib/plans';
+import { PLANS, PlanId, getStripePriceId } from '@/lib/plans';
 import { redirect } from 'next/navigation';
 
 export async function createCheckoutSession(planId: string, interval: 'monthly' | 'annual') {
@@ -23,27 +23,31 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
         throw new Error("Invalid plan selected");
     }
 
-    const price = interval === 'monthly' ? plan.prices.monthly : plan.prices.annual;
-    const priceInCents = Math.round(price * 100);
+    // Get the Stripe Price ID
+    const stripePriceId = getStripePriceId(planId, interval);
+    if (!stripePriceId) {
+        console.error(`No Stripe price ID found for plan: ${planId}, interval: ${interval}`);
+        throw new Error("Erro na configuração do plano. Entre em contato com o suporte.");
+    }
 
-    // Create Checkout Session
+    // Get or create Stripe customer
+    let customerId: string | undefined;
+    const company = await prisma.company.findUnique({
+        where: { id: session.companyId }
+    });
+
+    if (company?.stripeCustomerId) {
+        customerId = company.stripeCustomerId;
+    }
+
+    // Create Checkout Session using Stripe Price ID
     const checkoutSession = await stripe.checkout.sessions.create({
         mode: 'subscription',
         payment_method_types: ['card'],
         line_items: [
             {
                 quantity: 1,
-                price_data: {
-                    currency: 'brl',
-                    product_data: {
-                        name: `Plano ${plan.name} (${interval === 'monthly' ? 'Mensal' : 'Anual'})`,
-                        description: plan.description,
-                    },
-                    unit_amount: priceInCents,
-                    recurring: {
-                        interval: interval === 'monthly' ? 'month' : 'year',
-                    },
-                },
+                price: stripePriceId, // Use the Price ID from Stripe
             },
         ],
         metadata: {
@@ -53,7 +57,7 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
             userId: session.id
         },
         client_reference_id: session.companyId,
-        customer_email: user?.email,
+        ...(customerId ? { customer: customerId } : { customer_email: user?.email }),
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
     });
@@ -64,6 +68,7 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
 
     return { url: checkoutSession.url };
 }
+
 
 export async function createCustomerPortalSession() {
     const session = await getSession();

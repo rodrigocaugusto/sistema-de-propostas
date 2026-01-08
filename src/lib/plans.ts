@@ -1,3 +1,19 @@
+// Stripe Price IDs from environment variables
+const getStripePriceIds = () => ({
+    basic: {
+        monthly: process.env.STRIPE_PRICE_BASIC_MONTHLY || '',
+        annual: process.env.STRIPE_PRICE_BASIC_ANNUAL || '',
+    },
+    pro: {
+        monthly: process.env.STRIPE_PRICE_PRO_MONTHLY || '',
+        annual: process.env.STRIPE_PRICE_PRO_ANNUAL || '',
+    },
+    enterprise: {
+        monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || '',
+        annual: process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL || '',
+    },
+});
+
 export const PLANS = {
     trial: {
         id: 'trial',
@@ -72,4 +88,22 @@ export function getPlanUserLimit(planId: string) {
 export function getPlanName(planId: string) {
     const plan = PLANS[planId as PlanId];
     return plan?.name || planId;
+}
+
+/**
+ * Get Stripe Price ID for a plan and interval
+ */
+export function getStripePriceId(planId: string, interval: 'monthly' | 'annual'): string | null {
+    const priceIds = getStripePriceIds();
+
+    if (planId === 'trial') {
+        return null; // Trial has no price
+    }
+
+    const planPrices = priceIds[planId as keyof typeof priceIds];
+    if (!planPrices) {
+        return null;
+    }
+
+    return planPrices[interval] || null;
 }
