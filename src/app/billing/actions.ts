@@ -25,10 +25,22 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
 
     // Get the Stripe Price ID
     const stripePriceId = getStripePriceId(planId, interval);
+
+    // DEBUG: Log detalhado para produção
     if (!stripePriceId) {
-        console.error(`No Stripe price ID found for plan: ${planId}, interval: ${interval}`);
-        throw new Error("Erro na configuração do plano. Entre em contato com o suporte.");
+        console.error(`[Checkout Error] No Stripe price ID found for plan: ${planId}, interval: ${interval}`);
+        console.error(`[Environment] Environment variables check:`, {
+            BASIC_MONTHLY: !!process.env.STRIPE_PRICE_BASIC_MONTHLY,
+            BASIC_ANNUAL: !!process.env.STRIPE_PRICE_BASIC_ANNUAL,
+            PRO_MONTHLY: !!process.env.STRIPE_PRICE_PRO_MONTHLY,
+            PRO_ANNUAL: !!process.env.STRIPE_PRICE_PRO_ANNUAL,
+            ENTERPRISE_MONTHLY: !!process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
+            ENTERPRISE_ANNUAL: !!process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL
+        });
+        throw new Error(`Erro de configuração: Preço não encontrado para plano ${planId} (${interval}). Contate o suporte.`);
     }
+
+    console.log(`[Checkout] Creating session for user ${session.id}, plan ${planId}, price ${stripePriceId}`);
 
     // Get or create Stripe customer
     let customerId: string | undefined;
@@ -40,35 +52,41 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
         customerId = company.stripeCustomerId;
     }
 
-    // Create Checkout Session using Stripe Price ID
-    const checkoutSession = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        payment_method_types: ['card'],
-        line_items: [
-            {
-                quantity: 1,
-                price: stripePriceId, // Use the Price ID from Stripe
+    try {
+        // Create Checkout Session using Stripe Price ID
+        const checkoutSession = await stripe.checkout.sessions.create({
+            mode: 'subscription',
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    quantity: 1,
+                    price: stripePriceId, // Use the Price ID from Stripe
+                },
+            ],
+            metadata: {
+                companyId: session.companyId,
+                planId: planId,
+                interval: interval,
+                userId: session.id
             },
-        ],
-        metadata: {
-            companyId: session.companyId,
-            planId: planId,
-            interval: interval,
-            userId: session.id
-        },
-        client_reference_id: session.companyId,
-        ...(customerId ? { customer: customerId } : { customer_email: user?.email }),
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
-    });
+            client_reference_id: session.companyId,
+            ...(customerId ? { customer: customerId } : { customer_email: user?.email }),
+            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
+            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
+        });
 
-    if (!checkoutSession.url) {
-        throw new Error("Failed to create checkout session");
+        if (!checkoutSession.url) {
+            console.error('[Checkout Error] Stripe session created but no URL:', checkoutSession.id);
+            throw new Error("Failed to create checkout session URL");
+        }
+
+        return { url: checkoutSession.url };
+    } catch (error: any) {
+        console.error('[Checkout Stripe Error] Full error:', error);
+        // Retornar mensagem amigável mas com detalhes técnicos se possível
+        throw new Error(`Erro Stripe: ${error.message} (Code: ${error.code || 'unknown'})`);
     }
-
-    return { url: checkoutSession.url };
 }
-
 
 export async function createCustomerPortalSession() {
     const session = await getSession();
