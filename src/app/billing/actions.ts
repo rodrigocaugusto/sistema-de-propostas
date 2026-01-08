@@ -51,6 +51,14 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
             customerId = company.stripeCustomerId;
         }
 
+        // Determine Base URL
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+
+        if (!appUrl || !appUrl.startsWith('http')) {
+            console.error('[Checkout Error] Invalid App URL configured:', appUrl);
+            return { error: "Erro de configuração: URL da aplicação inválida. Contate o suporte." };
+        }
+
         // Create Checkout Session using Stripe Price ID
         const checkoutSession = await stripe.checkout.sessions.create({
             mode: 'subscription',
@@ -69,8 +77,8 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
             },
             client_reference_id: session.companyId,
             ...(customerId ? { customer: customerId } : { customer_email: user?.email }),
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
-            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
+            success_url: `${appUrl}/billing?success=true`,
+            cancel_url: `${appUrl}/billing?canceled=true`,
         });
 
         if (!checkoutSession.url) {
@@ -99,9 +107,11 @@ export async function createCustomerPortalSession() {
         throw new Error("No Stripe customer found");
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+
     const portalSession = await stripe.billingPortal.sessions.create({
         customer: company.stripeCustomerId,
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing`,
+        return_url: `${appUrl}/billing`,
     });
 
     return { url: portalSession.url };
