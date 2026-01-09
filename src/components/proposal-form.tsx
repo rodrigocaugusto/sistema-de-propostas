@@ -1552,6 +1552,11 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
                                     recurringBg: '#eff6ff',
                                     totalBg: '#F8FAFC',
                                     notesBg: '#FFFFFF',
+                                    gradientStart: '#8b5cf6',
+                                    gradientMiddle: '#a855f7',
+                                    gradientEnd: '#ec4899',
+                                    cardBg: 'rgba(255,255,255,0.1)',
+                                    accentColor: '#fbbf24',
                                 })}
                                 className="text-xs"
                             >
