@@ -936,6 +936,7 @@ export async function getPortfolioItems() {
 
 export async function createPortfolioItem(data: { type: string; title?: string; url: string; thumbnailUrl?: string }) {
     const session = await getSessionOrThrow();
+    if (!session.companyId) throw new Error('Company ID is required');
     return await prisma.portfolioItem.create({
         data: {
             ...data,
@@ -965,6 +966,7 @@ export async function getClientLogos() {
 
 export async function createClientLogo(data: { name?: string; url: string }) {
     const session = await getSessionOrThrow();
+    if (!session.companyId) throw new Error('Company ID is required');
     return await prisma.clientLogo.create({
         data: {
             ...data,
