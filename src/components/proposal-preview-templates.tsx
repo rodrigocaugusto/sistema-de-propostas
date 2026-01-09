@@ -526,8 +526,8 @@ export function ClassicPreview({
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="font-medium text-sm truncate">{item.name}</h4>
-                                            <p className="text-muted-foreground text-xs line-clamp-2">{item.description}</p>
+                                            <h4 className="font-medium text-sm">{item.name}</h4>
+                                            <p className="text-muted-foreground text-xs whitespace-pre-wrap break-words">{item.description}</p>
                                             {item.quantity > 1 && (
                                                 <p className="text-muted-foreground text-xs mt-0.5">{item.quantity}x R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                             )}
@@ -578,8 +578,8 @@ export function ClassicPreview({
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="font-medium text-sm truncate">{item.name}</h4>
-                                            <p className="text-muted-foreground text-xs line-clamp-2">{item.description}</p>
+                                            <h4 className="font-medium text-sm">{item.name}</h4>
+                                            <p className="text-muted-foreground text-xs whitespace-pre-wrap break-words">{item.description}</p>
                                             {item.quantity > 1 && (
                                                 <p className="text-muted-foreground text-xs mt-0.5">{item.quantity}x R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                             )}
@@ -819,7 +819,7 @@ export function ModernPreview({
                                         )}
                                         <div className="flex-1">
                                             <h4 className="font-semibold text-white">{item.name}</h4>
-                                            <p className="text-white/60 text-xs">{item.description}</p>
+                                            <p className="text-white/60 text-xs whitespace-pre-wrap break-words">{item.description}</p>
                                             {item.quantity > 1 && (
                                                 <p className="text-white/60 text-xs mt-0.5">{item.quantity}x R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                             )}
@@ -875,7 +875,7 @@ export function ModernPreview({
                                         )}
                                         <div className="flex-1">
                                             <h4 className="font-semibold text-white">{item.name}</h4>
-                                            <p className="text-white/60 text-xs">{item.description}</p>
+                                            <p className="text-white/60 text-xs whitespace-pre-wrap break-words">{item.description}</p>
                                             {item.quantity > 1 && (
                                                 <p className="text-white/60 text-xs mt-0.5">{item.quantity}x R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                             )}
@@ -1103,7 +1103,7 @@ export function MinimalPreview({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs" style={{ color: '#9ca3af' }}>{item.description}</p>
+                                                <p className="text-xs whitespace-pre-wrap break-words" style={{ color: '#9ca3af' }}>{item.description}</p>
                                                 {item.quantity > 1 && (
                                                     <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{item.quantity}x R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                                 )}
@@ -1178,7 +1178,7 @@ export function MinimalPreview({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs" style={{ color: '#9ca3af' }}>{item.description}</p>
+                                                <p className="text-xs whitespace-pre-wrap break-words" style={{ color: '#9ca3af' }}>{item.description}</p>
                                                 {item.quantity > 1 && (
                                                     <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{item.quantity}x R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                                 )}

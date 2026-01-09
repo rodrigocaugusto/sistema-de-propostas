@@ -372,7 +372,7 @@ export function ProposalViewModern({ proposal, company, products = [] }: Proposa
                                         )}
                                         <div className="flex-1 relative z-10">
                                             <h3 className="font-semibold text-lg text-white">{item.name}</h3>
-                                            <p className="text-white/60 text-sm">{item.description}</p>
+                                            <p className="text-white/60 text-sm whitespace-pre-wrap break-words">{item.description}</p>
                                         </div>
                                         <div className="relative z-10 text-left md:text-right w-full md:w-auto flex flex-row md:flex-col justify-between items-center md:items-end mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10">
                                             <div className="text-xs text-white/40 order-1 md:order-none">{item.quantity}x de</div>
@@ -431,7 +431,7 @@ export function ProposalViewModern({ proposal, company, products = [] }: Proposa
                                         )}
                                         <div className="flex-1 relative z-10">
                                             <h3 className="font-semibold text-lg text-white">{item.name}</h3>
-                                            <p className="text-white/60 text-sm">{item.description}</p>
+                                            <p className="text-white/60 text-sm whitespace-pre-wrap break-words">{item.description}</p>
                                         </div>
                                         <div className="relative z-10 text-left md:text-right w-full md:w-auto flex flex-row md:flex-col justify-between items-center md:items-end mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10">
                                             <div className="text-xs text-white/40 order-1 md:order-none">{item.quantity}x de</div>

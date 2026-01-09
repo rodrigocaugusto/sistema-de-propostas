@@ -366,7 +366,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                                         )}
                                         <div className="flex-1">
                                             <h3 className="font-semibold text-lg">{item.name}</h3>
-                                            <p className="text-muted-foreground text-sm">{item.description}</p>
+                                            <p className="text-muted-foreground text-sm whitespace-pre-wrap break-words">{item.description}</p>
                                         </div>
                                         <div className="w-full md:w-auto flex flex-row md:flex-col justify-between md:justify-end items-center md:items-end mt-2 md:mt-0 md:text-right min-w-[120px]">
                                             <div className="text-xs text-muted-foreground">{item.quantity}x de</div>
@@ -422,7 +422,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                                         )}
                                         <div className="flex-1">
                                             <h3 className="font-semibold text-lg">{item.name}</h3>
-                                            <p className="text-muted-foreground text-sm">{item.description}</p>
+                                            <p className="text-muted-foreground text-sm whitespace-pre-wrap break-words">{item.description}</p>
                                         </div>
                                         <div className="w-full md:w-auto flex flex-row md:flex-col justify-between md:justify-end items-center md:items-end mt-2 md:mt-0 md:text-right min-w-[120px]">
                                             <div className="text-xs text-muted-foreground">{item.quantity}x de</div>
@@ -654,7 +654,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                 </motion.section>
 
             </motion.main>
-        </div>
+        </div >
     );
 }
 

@@ -336,7 +336,7 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">{item.description}</p>
+                                            <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1 whitespace-pre-wrap break-words">{item.description}</p>
                                         </div>
                                         <div className="text-left md:text-right shrink-0 flex flex-row md:flex-col justify-between items-center md:items-end w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800">
                                             {item.quantity > 1 && (
@@ -394,7 +394,7 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">{item.description}</p>
+                                            <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1 whitespace-pre-wrap break-words">{item.description}</p>
                                         </div>
                                         <div className="text-left md:text-right shrink-0 flex flex-row md:flex-col justify-between items-center md:items-end w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800">
                                             {item.quantity > 1 && (
