@@ -18,6 +18,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from 'sonner';
+import { PortfolioSection, ClientLogosSection } from '@/components/proposal-preview-templates';
 
 interface ProposalViewProps {
     proposal: Proposal;
@@ -289,8 +290,12 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                     </div>
 
                     {proposal.introduction && (
-                        <div className="max-w-3xl mx-auto mt-8 text-lg leading-relaxed opacity-90 whitespace-pre-wrap text-left" style={getContrastTextStyle(proposal.customColors?.introductionBg)}>
-                            {proposal.introduction}
+                        <div className="max-w-3xl mx-auto mt-8 bg-card border rounded-xl p-6 shadow-sm">
+                            <h3 className="font-semibold text-sm mb-3 text-slate-700 dark:text-slate-300">Apresentação</h3>
+                            <div
+                                className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed prose prose-sm max-w-none dark:prose-invert"
+                                dangerouslySetInnerHTML={{ __html: proposal.introduction }}
+                            />
                         </div>
                     )}
                 </motion.section>
@@ -317,6 +322,20 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                                 </div>
                             </CardContent>
                         </Card>
+                    </motion.section>
+                )}
+
+                {/* Portfolio Section */}
+                {(proposal as any).includePortfolio && company?.portfolioItems && company.portfolioItems.length > 0 && (
+                    <motion.section variants={itemAnim}>
+                        <PortfolioSection items={company.portfolioItems} />
+                    </motion.section>
+                )}
+
+                {/* Client Logos Section */}
+                {(proposal as any).includeClientLogos && company?.clientLogos && company.clientLogos.length > 0 && (
+                    <motion.section variants={itemAnim}>
+                        <ClientLogosSection logos={company.clientLogos} grayscale={(proposal as any).clientLogosGrayscale !== false} />
                     </motion.section>
                 )}
 

@@ -12,11 +12,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, ArrowRight, Eye, Calendar, Mail, Phone, ShieldCheck, Package, Search, Check, RefreshCw, Save, CreditCard, FileText, Palette, ChevronDown } from 'lucide-react';
+import { Loader2, Plus, Trash2, ArrowRight, Mail, Phone, Package, Search, Check, RefreshCw, Save, CreditCard, FileText, Palette, ChevronDown, Play, Image as ImageIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Company, ProductPlan } from '@/lib/db';
+import { Company, ProductPlan, PortfolioItem } from '@/lib/db';
 import { getContrastTextStyle, getContrastMutedStyle, isDarkColor } from '@/lib/colors';
+import { ProposalTemplateId } from '@/lib/proposal-templates';
+import { ProposalPreviewPanel } from '@/components/proposal-preview-panel';
 import { useMask } from '@react-input/mask';
+import { RichTextEditor } from '@/components/rich-text-editor';
 
 interface Item {
     id: string;
@@ -70,9 +73,11 @@ interface ProposalFormProps {
     proposalNotes?: ProposalNoteType[];
     paymentTermsTemplates?: PaymentTermsTemplateType[];
     clients?: ClientType[];
+    selectedTemplate?: ProposalTemplateId;
+    portfolioItems?: PortfolioItem[];
 }
 
-export function ProposalForm({ company, products: initialProducts, paymentMethods = [], proposalNotes = [], paymentTermsTemplates = [], clients = [] }: ProposalFormProps) {
+export function ProposalForm({ company, products: initialProducts, paymentMethods = [], proposalNotes = [], paymentTermsTemplates = [], clients = [], selectedTemplate = 'classic', portfolioItems = [] }: ProposalFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
@@ -93,6 +98,10 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
     const [items, setItems] = useState<Item[]>([]);
     const [recurringItems, setRecurringItems] = useState<Item[]>([]);
     const [introduction, setIntroduction] = useState('Com base nas suas necessidades, preparamos esta proposta comercial personalizada. Acreditamos que esta solução trará os resultados esperados para o seu negócio.');
+    const [showIntroduction, setShowIntroduction] = useState(true);
+    const [includePortfolio, setIncludePortfolio] = useState(false);
+    const [includeClientLogos, setIncludeClientLogos] = useState(false);
+    const [clientLogosGrayscale, setClientLogosGrayscale] = useState(false);
 
     // Payment and notes - NOW ARRAYS for multiple selections
     const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<string[]>([]);
@@ -100,6 +109,18 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
     const [selectedPaymentTerms, setSelectedPaymentTerms] = useState<string[]>([]);
     const [validityDays, setValidityDays] = useState(15);
     const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
+    const [selectedPortfolioItemIds, setSelectedPortfolioItemIds] = useState<string[]>([]);
+
+    // Initialize selected portfolio items if any exist and are active ?
+    // Or select all by default? 
+    useEffect(() => {
+        if (portfolioItems.length > 0 && selectedPortfolioItemIds.length === 0) {
+            // Default select ALL? Or None? User usually wants to curate.
+            // Let's select ALL for convenience if the list is small? 
+            // Better: select ALL.
+            setSelectedPortfolioItemIds(portfolioItems.filter(i => i.isActive).map(i => i.id));
+        }
+    }, [portfolioItems]); // Run once on mount/load
 
     // Recurring period options
     const [recurringPeriodType, setRecurringPeriodType] = useState<'months' | 'years' | 'indeterminate'>('indeterminate');
@@ -158,6 +179,34 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
                 ? prev.filter(n => n !== content)
                 : [...prev, content]
         );
+    };
+
+    const togglePortfolioItem = (id: string) => {
+        const isSelected = selectedPortfolioItemIds.includes(id);
+        if (isSelected) {
+            setSelectedPortfolioItemIds(prev => prev.filter(i => i !== id));
+            return;
+        }
+
+        const newItem = portfolioItems.find(i => i.id === id);
+        if (!newItem) return;
+
+        // Check existing selections
+        const currentSelection = portfolioItems.filter(i => selectedPortfolioItemIds.includes(i.id));
+        const existingSameType = currentSelection.find(i => i.type === newItem.type);
+
+        if (existingSameType) {
+            // Auto-swap if same type exists
+            setSelectedPortfolioItemIds(prev => [...prev.filter(pid => pid !== existingSameType.id), id]);
+            toast.info(`Galeria de ${newItem.type === 'video' ? 'Vídeo' : 'Imagem'} atualizada.`);
+        } else {
+            // Check max limit (should cover edge cases)
+            if (currentSelection.length >= 2) {
+                toast.error('Máximo de 2 galerias permitidas.');
+                return;
+            }
+            setSelectedPortfolioItemIds(prev => [...prev, id]);
+        }
     };
 
     const selectClient = (clientId: string) => {
@@ -292,6 +341,7 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
     };
 
     const totalOneTime = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const previewPortfolioItems = (portfolioItems || []).filter(item => selectedPortfolioItemIds.includes(item.id));
     const totalRecurring = recurringItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -314,7 +364,7 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
                 clientPhone: clientPhone || undefined,
                 items,
                 recurringItems,
-                introduction: introduction || null,
+                introduction: showIntroduction ? (introduction || null) : null,
                 totalOneTime,
                 totalRecurring,
                 paymentMethods: selectedPaymentMethods,
@@ -326,7 +376,12 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
                 recurringPeriod: recurringPeriodType === 'indeterminate' ? undefined : (recurringPeriod || undefined),
                 proposalNumber: proposalNumber || '', // Use the state value
                 clientId: selectedClientId,
+                template: selectedTemplate,
                 customColors,
+                includePortfolio,
+                includeClientLogos,
+                clientLogosGrayscale,
+                portfolioItemIds: includePortfolio ? selectedPortfolioItemIds : []
             });
             toast.success("Proposta criada com sucesso!");
             const url = `/p/${proposal.id}`;
@@ -468,16 +523,114 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
 
                 {/* Introduction */}
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between pb-4">
                         <CardTitle className="text-base text-slate-700 dark:text-slate-200">Apresentação / Introdução</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Textarea
-                            placeholder="Escreva uma breve introdução para a proposta..."
-                            className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 min-h-[100px]"
-                            value={introduction}
-                            onChange={(e) => setIntroduction(e.target.value)}
+                        <Switch
+                            checked={showIntroduction}
+                            onCheckedChange={setShowIntroduction}
                         />
+                    </CardHeader>
+                    {showIntroduction && (
+                        <CardContent>
+                            <RichTextEditor
+                                placeholder="Escreva uma breve introdução para a proposta..."
+                                className="min-h-[150px]"
+                                value={introduction}
+                                onChange={setIntroduction}
+                            />
+                        </CardContent>
+                    )}
+                </Card>
+
+                {/* Media & Clients */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base text-slate-700 dark:text-slate-200">Mídia e Clientes</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Incluir Galeria / Portfólio</Label>
+                                <p className="text-sm text-slate-500">Exibir seção com vídeos e imagens selecionados</p>
+                            </div>
+                            <Switch
+                                checked={includePortfolio}
+                                onCheckedChange={setIncludePortfolio}
+                            />
+                        </div>
+                        <Separator />
+
+                        {includePortfolio && portfolioItems.length > 0 && (
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2">
+                                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 block">
+                                    Itens do Portfólio ({selectedPortfolioItemIds.length}/{portfolioItems.length})
+                                </Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                                    {portfolioItems.map((item) => {
+                                        const isSelected = selectedPortfolioItemIds.includes(item.id);
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                onClick={() => togglePortfolioItem(item.id)}
+                                                className={`
+                                                    flex items-center gap-3 p-2 rounded-md border cursor-pointer transition-all
+                                                    ${isSelected
+                                                        ? 'bg-primary/5 border-primary/30'
+                                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                                                    }
+                                                `}
+                                            >
+                                                <div className={`
+                                                    w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors
+                                                    ${isSelected ? 'bg-primary border-primary' : 'border-slate-300 dark:border-slate-600'}
+                                                `}>
+                                                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                                                </div>
+
+                                                <div className="w-10 h-6 shrink-0 bg-slate-100 dark:bg-slate-800 rounded overflow-hidden relative">
+                                                    {item.thumbnailUrl ? (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={item.thumbnailUrl} className="w-full h-full object-cover" alt="" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center">
+                                                            {item.type === 'video' ? <Play className="w-3 h-3 opacity-50" /> : <ImageIcon className="w-3 h-3 opacity-50" />}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-medium truncate">{item.title || (item.type === 'video' ? 'Vídeo' : 'Imagem')}</p>
+                                                    <p className="text-[10px] text-muted-foreground truncate">{item.url}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Incluir Logos de Clientes</Label>
+                                <p className="text-sm text-slate-500">Exibir logos de clientes cadastrados</p>
+                            </div>
+                            <Switch
+                                checked={includeClientLogos}
+                                onCheckedChange={setIncludeClientLogos}
+                            />
+                        </div>
+                        {includeClientLogos && (
+                            <div className="flex items-center justify-between pl-4 border-l-2 border-slate-100 dark:border-slate-800 ml-1">
+                                <div className="space-y-0.5">
+                                    <Label className="text-sm">Logos em Escala de Cinza</Label>
+                                    <p className="text-xs text-slate-500">Uniformizar cores das logos</p>
+                                </div>
+                                <Switch
+                                    checked={clientLogosGrayscale}
+                                    onCheckedChange={setClientLogosGrayscale}
+                                />
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -1359,322 +1512,29 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
             </div >
 
             {/* Right Side - Preview */}
-            < div className="hidden xl:block" >
-                <div className="sticky top-8">
-                    <div className="flex items-center gap-2 mb-4 text-muted-foreground">
-                        <Eye className="h-4 w-4" />
-                        <span className="text-sm font-medium">Pré-visualização</span>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-background via-background to-secondary/20 border rounded-xl overflow-hidden shadow-2xl">
-                        {/* Preview Header */}
-                        <div className="bg-background/80 backdrop-blur-md border-b p-4 flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                {company?.logoUrl ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                        src={company.logoUrl}
-                                        alt={company.name}
-                                        className="h-8 w-auto object-contain"
-                                    />
-                                ) : (
-                                    <div className="font-bold text-lg tracking-tight">
-                                        {company?.name || 'Sua Empresa'}
-                                    </div>
-                                )}
-                            </div>
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium border bg-yellow-500/10 text-yellow-500 border-yellow-500/20 animate-pulse">
-                                Pré-visualização
-                            </span>
-                        </div>
-
-                        {/* Preview Content */}
-                        <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto" style={{ backgroundColor: customColors.headerBg }}>
-                            {/* Introduction */}
-                            <div className="text-center space-y-3 py-6 rounded-lg p-4" style={{ backgroundColor: customColors.introductionBg }}>
-                                {company?.logoUrl ? (
-                                    <div className="mb-4">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={company.logoUrl}
-                                            alt={company.name}
-                                            className="h-16 w-auto object-contain mx-auto"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className={`inline-block p-3 rounded-full ${isDarkColor(customColors.introductionBg) ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}`}>
-                                        <FileIcon className="w-6 h-6" />
-                                    </div>
-                                )}
-                                <h2
-                                    className="text-2xl font-extrabold tracking-tight"
-                                    style={isDarkColor(customColors.introductionBg) ? { color: '#ffffff' } : {}}
-                                >
-                                    <span className={isDarkColor(customColors.introductionBg) ? '' : 'bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent'}>
-                                        Proposta Comercial
-                                    </span>
-                                </h2>
-                                <div className={`inline-block px-3 py-1 rounded-full ${isDarkColor(customColors.introductionBg) ? 'bg-white/20' : 'bg-violet-100 dark:bg-violet-900/30'}`}>
-                                    <span className={`text-xs font-medium ${isDarkColor(customColors.introductionBg) ? 'text-white' : 'text-violet-700 dark:text-violet-300'}`}>{proposalNumber}</span>
-                                </div>
-                                <p style={getContrastMutedStyle(customColors.introductionBg)}>
-                                    Preparada para{' '}
-                                    <span className="font-semibold" style={getContrastTextStyle(customColors.introductionBg)}>
-                                        {clientName || 'Nome do Cliente'}
-                                    </span>
-                                </p>
-                                {clientCompany && (
-                                    <p className="text-sm font-medium -mt-2" style={getContrastMutedStyle(customColors.introductionBg)}>
-                                        {clientCompany}
-                                    </p>
-                                )}
-                                <div className="flex justify-center gap-4 text-xs" style={getContrastMutedStyle(customColors.introductionBg)}>
-                                    <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {new Date().toLocaleDateString('pt-BR')}</span>
-                                    <span className="flex items-center"><ShieldCheck className="w-3 h-3 mr-1" /> Validade: {validityDays} dias</span>
-                                </div>
-                            </div>
-
-                            {/* Company Intro */}
-                            {company && (
-                                <div className="bg-card/50 backdrop-blur-sm rounded-lg p-4 text-center">
-                                    <h3 className="text-sm font-semibold mb-1">Apresentado por {company.responsible}</h3>
-                                    <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
-                                        <span className="flex items-center"><Mail className="w-3 h-3 mr-1" /> {company.email}</span>
-                                        <span className="flex items-center"><Phone className="w-3 h-3 mr-1" /> {company.phone}</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            <Separator className="opacity-50" />
-
-                            {/* One Time Items */}
-                            {items.length > 0 && (
-                                <div className="space-y-3 rounded-lg p-4" style={{ backgroundColor: customColors.oneTimeBg }}>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`h-5 w-1 rounded-full ${isDarkColor(customColors.oneTimeBg) ? 'bg-white' : 'bg-primary'}`}></div>
-                                        <h3 className="font-bold text-sm" style={getContrastTextStyle(customColors.oneTimeBg)}>Investimento Único</h3>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {items.map((item, idx) => {
-                                            const originalProduct = products.find(p => p.name === item.name && p.type === 'one-time');
-                                            const originalPrice = item.originalPrice || (originalProduct ? originalProduct.price : 0);
-                                            const hasDiscount = (item.showDiscount ?? true) && originalPrice > item.price;
-                                            const discountPercent = hasDiscount ? Math.round(((originalPrice - item.price) / originalPrice) * 100) : 0;
-
-                                            return (
-                                                <div
-                                                    key={idx}
-                                                    className="bg-card border rounded-lg p-3 flex justify-between items-center gap-2 relative overflow-hidden"
-                                                >
-                                                    {hasDiscount && (
-                                                        <div className="absolute top-0 right-0 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg z-10">
-                                                            {discountPercent}%
-                                                        </div>
-                                                    )}
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="font-medium text-sm truncate">{item.name}</h4>
-                                                        <p className="text-muted-foreground text-xs line-clamp-2">{item.description}</p>
-                                                        {item.quantity > 1 && (
-                                                            <p className="text-muted-foreground text-xs mt-0.5">{item.quantity}x R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-right shrink-0">
-                                                        {hasDiscount ? (
-                                                            <div className="flex flex-col items-end">
-                                                                <span className="text-[10px] text-muted-foreground line-through">
-                                                                    R$ {(originalPrice * item.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                                </span>
-                                                                <div className="font-bold text-sm text-green-600">
-                                                                    R$ {(item.price * item.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="font-bold text-sm">R$ {(item.price * item.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <div className={`text-right p-2 rounded-lg border ${isDarkColor(customColors.oneTimeBg) ? 'bg-white/10 border-white/20' : 'bg-primary/5 border-primary/10'}`}>
-                                        <p className="text-xs" style={getContrastMutedStyle(customColors.oneTimeBg)}>Total Único</p>
-                                        <p className={`text-lg font-bold ${isDarkColor(customColors.oneTimeBg) ? 'text-white' : 'text-primary'}`}>R$ {totalOneTime.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Recurring Items */}
-                            {recurringItems.length > 0 && (
-                                <div className="space-y-3 rounded-lg p-4" style={{ backgroundColor: customColors.recurringBg }}>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`h-5 w-1 rounded-full ${isDarkColor(customColors.recurringBg) ? 'bg-white' : 'bg-blue-500'}`}></div>
-                                        <h3 className="font-bold text-sm" style={getContrastTextStyle(customColors.recurringBg)}>Mensalidade Recorrente</h3>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {recurringItems.map((item, idx) => {
-                                            const originalProduct = products.find(p => p.name === item.name && p.type === 'recurring');
-                                            const originalPrice = item.originalPrice || (originalProduct ? originalProduct.price : 0);
-                                            const hasDiscount = (item.showDiscount ?? true) && originalPrice > item.price;
-                                            const discountPercent = hasDiscount ? Math.round(((originalPrice - item.price) / originalPrice) * 100) : 0;
-
-                                            return (
-                                                <div
-                                                    key={idx}
-                                                    className="bg-card border-l-4 border-l-blue-500 rounded-r-lg border-y border-r p-3 flex justify-between items-center gap-2 relative overflow-hidden"
-                                                >
-                                                    {hasDiscount && (
-                                                        <div className="absolute top-0 right-0 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg z-10">
-                                                            {discountPercent}%
-                                                        </div>
-                                                    )}
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="font-medium text-sm truncate">{item.name}</h4>
-                                                        <p className="text-muted-foreground text-xs line-clamp-2">{item.description}</p>
-                                                        {item.quantity > 1 && (
-                                                            <p className="text-muted-foreground text-xs mt-0.5">{item.quantity}x R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-right shrink-0">
-                                                        {hasDiscount ? (
-                                                            <div className="flex flex-col items-end">
-                                                                <span className="text-[10px] text-muted-foreground line-through">
-                                                                    R$ {(originalPrice * item.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                                </span>
-                                                                <div className="font-bold text-sm text-blue-500">
-                                                                    R$ {(item.price * item.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="font-bold text-sm text-blue-500">R$ {(item.price * item.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                                                        )}
-                                                        <div className="text-xs text-muted-foreground">/mês</div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <div className={`text-right p-2 rounded-lg border ${isDarkColor(customColors.recurringBg) ? 'bg-white/10 border-white/20' : 'bg-blue-500/5 border-blue-500/10'}`}>
-                                        <p className="text-xs" style={getContrastMutedStyle(customColors.recurringBg)}>Total Mensal</p>
-                                        <p className={`text-lg font-bold ${isDarkColor(customColors.recurringBg) ? 'text-white' : 'text-blue-500'}`}>
-                                            R$ {totalRecurring.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                            <span className="text-xs font-normal"> /mês</span>
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Empty State */}
-                            {items.length === 0 && recurringItems.length === 0 && (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <p className="text-sm">Adicione itens à proposta para visualizar o preview.</p>
-                                </div>
-                            )}
-
-                            {/* Payment & Terms */}
-                            {(selectedPaymentMethods.length > 0 || selectedPaymentTerms.length > 0) && (
-                                <div className="rounded-lg p-4 border border-emerald-200 dark:border-emerald-800" style={{ backgroundColor: customColors.notesBg }}>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                        <h4 className="font-semibold text-sm text-emerald-800 dark:text-emerald-300">Pagamento</h4>
-                                    </div>
-                                    {selectedPaymentMethods.length > 0 && (
-                                        <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                                            <span className="font-medium">Formas:</span> {selectedPaymentMethods.join(', ')}
-                                        </p>
-                                    )}
-                                    {selectedPaymentTerms.length > 0 && (
-                                        <div className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">
-                                            <span className="font-medium">Condições:</span>
-                                            <ul className="list-disc list-inside mt-1 space-y-1">
-                                                {selectedPaymentTerms.map((term, idx) => (
-                                                    <li key={idx} className="text-xs">{term}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Notes */}
-                            {selectedNotes.length > 0 && (
-                                <div className="rounded-lg p-4 border border-violet-200 dark:border-violet-800" style={{ backgroundColor: customColors.notesBg }}>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <FileText className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                                        <h4 className="font-semibold text-sm text-violet-800 dark:text-violet-300">Observações</h4>
-                                    </div>
-                                    <ul className="space-y-2">
-                                        {selectedNotes.map((note, idx) => (
-                                            <li key={idx} className="text-sm text-violet-700 dark:text-violet-400">• {note}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {/* Summary */}
-                            {(items.length > 0 || recurringItems.length > 0) && (
-                                <div
-                                    className="rounded-lg p-4 text-center space-y-2 relative overflow-hidden"
-                                    style={{
-                                        backgroundColor: customColors.totalBg,
-                                        color: isDarkColor(customColors.totalBg) ? '#ffffff' : '#1e293b'
-                                    }}
-                                >
-                                    <div className="absolute top-0 right-0 p-16 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
-                                    <h3 className="font-bold relative z-10">Resumo do Investimento</h3>
-                                    <div className="flex justify-center gap-6 relative z-10">
-                                        {totalOneTime > 0 && (
-                                            <div>
-                                                <p className="text-xs opacity-80">Inicial</p>
-                                                <p className="text-xl font-extrabold">R$ {totalOneTime.toLocaleString('pt-BR')}</p>
-                                            </div>
-                                        )}
-                                        {totalRecurring > 0 && (
-                                            <div className={totalOneTime > 0 ? "border-l border-current/20 pl-6" : ""}>
-                                                <p className="text-xs opacity-80">Mensal</p>
-                                                <p className="text-xl font-extrabold">R$ {totalRecurring.toLocaleString('pt-BR')}</p>
-                                                {recurringPeriod && (recurringPeriodType === 'years' || recurringPeriod > 1) && (
-                                                    <div className="mt-1 pt-1 border-t border-current/20">
-                                                        <p className="text-[10px] opacity-70 leading-tight">
-                                                            Total em {recurringPeriod} {recurringPeriodType === 'years' ? (recurringPeriod === 1 ? 'ano' : 'anos') : (recurringPeriod === 1 ? 'mês' : 'meses')}:
-                                                        </p>
-                                                        <p className="text-sm font-bold">
-                                                            R$ {(totalRecurring * (recurringPeriodType === 'years' ? recurringPeriod * 12 : recurringPeriod)).toLocaleString('pt-BR')}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div >
-        </div >
+            <ProposalPreviewPanel
+                selectedTemplate={selectedTemplate}
+                company={company}
+                clientName={clientName}
+                clientCompany={clientCompany}
+                proposalNumber={proposalNumber}
+                validityDays={validityDays}
+                items={items}
+                recurringItems={recurringItems}
+                totalOneTime={totalOneTime}
+                totalRecurring={totalRecurring}
+                selectedPaymentMethods={selectedPaymentMethods}
+                selectedPaymentTerms={selectedPaymentTerms}
+                selectedNotes={selectedNotes}
+                recurringPeriod={recurringPeriod}
+                recurringPeriodType={recurringPeriodType}
+                introduction={showIntroduction ? introduction : undefined}
+                customColors={customColors}
+                includePortfolio={includePortfolio}
+                includeClientLogos={includeClientLogos}
+                clientLogosGrayscale={clientLogosGrayscale}
+                portfolioItems={previewPortfolioItems}
+            />
+        </div>
     );
-}
-
-function FileIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-        </svg>
-    )
 }

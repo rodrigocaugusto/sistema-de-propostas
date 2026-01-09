@@ -1,14 +1,24 @@
 
-import { fetchCompany, fetchAllPaymentMethods, fetchAllProposalNotes, fetchAllPaymentTermsTemplates, logoutAction } from "@/app/actions";
+import {
+    fetchCompany,
+    fetchAllPaymentMethods,
+    fetchAllProposalNotes,
+    fetchAllPaymentTermsTemplates,
+    fetchPortfolioItems,
+    fetchClientLogos,
+    logoutAction
+} from "@/app/actions";
 import { getSession } from "@/lib/auth";
 import { CompanyForm } from "@/components/company-form";
 import { PaymentMethodsManager } from "@/components/payment-methods-manager";
 import { ProposalNotesManager } from "@/components/proposal-notes-manager";
 import { PaymentTermsManager } from "@/components/payment-terms-manager";
+import { PortfolioManager } from "@/components/portfolio-manager";
+import { ClientLogosManager } from "@/components/client-logos-manager";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, CreditCard, FileText, CheckCircle, AlertCircle, Receipt } from "lucide-react";
+import { Building2, CreditCard, FileText, CheckCircle, AlertCircle, Receipt, Video, ImageIcon } from "lucide-react";
 
 export default async function SettingsPage() {
     const session = await getSession();
@@ -16,6 +26,8 @@ export default async function SettingsPage() {
     const paymentMethods = await fetchAllPaymentMethods() as any;
     const proposalNotes = await fetchAllProposalNotes() as any;
     const paymentTermsTemplates = await fetchAllPaymentTermsTemplates() as any;
+    const portfolioItems = await fetchPortfolioItems() as any;
+    const clientLogos = await fetchClientLogos() as any;
 
     const activePayments = paymentMethods.filter((p: any) => p.isActive).length;
     const activeNotes = proposalNotes.filter((n: any) => n.isActive).length;
@@ -156,6 +168,36 @@ export default async function SettingsPage() {
                                         )}
                                     </div>
                                 </TabsTrigger>
+
+                                <TabsTrigger
+                                    value="portfolio"
+                                    className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-red-100 data-[state=active]:text-red-700 data-[state=active]:border-red-200 dark:data-[state=active]:bg-red-900/30 dark:data-[state=active]:text-red-400 dark:data-[state=active]:border-red-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Video className="h-4 w-4" />
+                                        <span className="font-medium">Portfólio</span>
+                                        {portfolioItems.length > 0 && (
+                                            <span className="ml-1.5 text-xs bg-red-200/50 text-red-800 dark:bg-red-900 dark:text-red-300 px-2 py-0.5 rounded-full">
+                                                {portfolioItems.length}
+                                            </span>
+                                        )}
+                                    </div>
+                                </TabsTrigger>
+
+                                <TabsTrigger
+                                    value="clients"
+                                    className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200 dark:data-[state=active]:bg-blue-900/30 dark:data-[state=active]:text-blue-400 dark:data-[state=active]:border-blue-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <ImageIcon className="h-4 w-4" />
+                                        <span className="font-medium">Clientes</span>
+                                        {clientLogos.length > 0 && (
+                                            <span className="ml-1.5 text-xs bg-blue-200/50 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                                                {clientLogos.length}
+                                            </span>
+                                        )}
+                                    </div>
+                                </TabsTrigger>
                             </TabsList>
                         </div>
 
@@ -225,6 +267,40 @@ export default async function SettingsPage() {
                                 </div>
                                 <div className="ml-3">
                                     <ProposalNotesManager initialData={proposalNotes} />
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="portfolio" className="mt-0 space-y-6">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                            <div className="h-8 w-1 bg-red-500 rounded-full" />
+                                            Portfólio & Cases
+                                        </h2>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 ml-3">
+                                            Adicione vídeos ou imagens para enriquecer suas propostas
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="ml-3">
+                                    <PortfolioManager initialData={portfolioItems} />
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="clients" className="mt-0 space-y-6">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                            <div className="h-8 w-1 bg-blue-500 rounded-full" />
+                                            Logos de Clientes
+                                        </h2>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 ml-3">
+                                            Exiba as empresas que confiam no seu trabalho
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="ml-3">
+                                    <ClientLogosManager initialData={clientLogos} />
                                 </div>
                             </TabsContent>
                         </div>

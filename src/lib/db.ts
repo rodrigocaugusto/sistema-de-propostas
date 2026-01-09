@@ -22,6 +22,24 @@ export interface Company {
     logoUrl?: string | null;
     webhookUrl?: string | null;
     updatedAt?: Date;
+    portfolioItems?: PortfolioItem[];
+    clientLogos?: ClientLogo[];
+}
+
+export interface PortfolioItem {
+    id: string;
+    type: 'video' | 'image';
+    title?: string | null;
+    url: string;
+    thumbnailUrl?: string | null;
+    isActive: boolean;
+}
+
+export interface ClientLogo {
+    id: string;
+    name?: string | null;
+    url: string;
+    isActive: boolean;
 }
 
 export interface ProductItem {
@@ -44,6 +62,7 @@ export interface Proposal {
     clientPhone?: string | null;
     clientId?: string | null;
     status: string;
+    template?: string | null;
     createdAt: string | Date;
     items: ProductItem[];
     recurringItems: ProductItem[];
@@ -56,6 +75,10 @@ export interface Proposal {
     validityDays?: number | null;
     recurringPeriodType?: string | null;
     recurringPeriod?: number | null;
+    includePortfolio?: boolean;
+    includeClientLogos?: boolean;
+    clientLogosGrayscale?: boolean;
+    portfolioItems?: PortfolioItem[];
     customColors?: {
         headerBg?: string;
         introductionBg?: string;
@@ -103,9 +126,23 @@ export async function getCompany() {
     const session = await getSession();
     if (!session || !session.companyId) return null;
 
-    return await prisma.company.findUnique({
-        where: { id: session.companyId }
+    const company = await prisma.company.findUnique({
+        where: { id: session.companyId },
+        include: {
+            portfolioItems: { where: { isActive: true }, orderBy: { createdAt: 'desc' } },
+            clientLogos: { where: { isActive: true } }
+        }
     });
+
+    if (!company) return null;
+
+    return {
+        ...company,
+        updatedAt: undefined,
+        createdAt: undefined,
+        portfolioItems: (company as any).portfolioItems?.map(({ createdAt, updatedAt, ...i }: any) => i) || [],
+        clientLogos: company.clientLogos.map(({ createdAt, updatedAt, ...i }) => i),
+    };
 }
 
 export async function updateCompany(data: Company) {
@@ -142,7 +179,7 @@ export async function getProposals() {
 
     const proposals = await prisma.proposal.findMany({
         where: { companyId: session.companyId },
-        include: { items: true },
+        include: { items: true }, // portfolioItems: true
         orderBy: { createdAt: 'desc' },
     });
 
@@ -152,6 +189,7 @@ export async function getProposals() {
         status: p.status as any,
         items: p.items.filter(i => i.type === 'one-time').map(i => ({ ...i, id: i.id })),
         recurringItems: p.items.filter(i => i.type === 'recurring').map(i => ({ ...i, id: i.id })),
+        portfolioItems: [], // p.portfolioItems?.map(({ createdAt, updatedAt, ...i }) => i) || [],
         paymentMethods: castToStringArray(p.paymentMethods),
         paymentTerms: castToStringArray(p.paymentTerms),
         notes: castToStringArray(p.notes),
@@ -159,7 +197,7 @@ export async function getProposals() {
     }));
 }
 
-export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | 'status'>) {
+export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | 'status' | 'portfolioItems'> & { portfolioItemIds?: string[] }) {
     const session = await getSession();
     if (!session || !session.companyId) throw new Error("Unauthorized");
     const companyId = session.companyId;
@@ -267,6 +305,7 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
             clientEmail: data.clientEmail,
             clientPhone: data.clientPhone || null,
             status: 'draft',
+            template: data.template || 'classic',
             totalOneTime: data.totalOneTime,
             totalRecurring: data.totalRecurring,
             clientId: client.id,
@@ -278,6 +317,12 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
             recurringPeriodType: data.recurringPeriodType || null,
             recurringPeriod: data.recurringPeriod || null,
             customColors: (data.customColors || null) as any,
+            includePortfolio: data.includePortfolio ?? false,
+            includeClientLogos: data.includeClientLogos ?? false,
+            clientLogosGrayscale: data.clientLogosGrayscale ?? false,
+            // portfolioItems: {
+            //     connect: (data.portfolioItemIds || []).map(id => ({ id }))
+            // },
             items: {
                 create: [
                     ...data.items.map(i => ({
@@ -319,6 +364,7 @@ function transformProposal(p: any) {
         paymentTerms: castToStringArray(p.paymentTerms),
         notes: castToStringArray(p.notes),
         customColors: p.customColors as any || {},
+        portfolioItems: p.portfolioItems || [], // Include relations
     };
 }
 
@@ -331,6 +377,7 @@ export async function getProposal(id: string) {
         where: { id },
         include: {
             items: true,
+            // portfolioItems: true,
             createdBy: {
                 select: { name: true, email: true, phone: true } // Fetch creator details
             }
@@ -575,6 +622,10 @@ export interface ProposalUpdateData {
     recurringPeriodType?: string;
     customColors?: any;
     status?: string;
+    includePortfolio?: boolean;
+    includeClientLogos?: boolean;
+    clientLogosGrayscale?: boolean;
+    portfolioItemIds?: string[];
 }
 
 export async function updateProposal(id: string, data: ProposalUpdateData) {
@@ -613,6 +664,12 @@ export async function updateProposal(id: string, data: ProposalUpdateData) {
             ...(data.recurringPeriodType && { recurringPeriodType: data.recurringPeriodType }),
             ...(data.customColors && { customColors: data.customColors }),
             ...(data.status && { status: data.status }),
+            ...(data.includePortfolio !== undefined && { includePortfolio: data.includePortfolio }),
+            ...(data.includeClientLogos !== undefined && { includeClientLogos: data.includeClientLogos }),
+            ...(data.clientLogosGrayscale !== undefined && { clientLogosGrayscale: data.clientLogosGrayscale }),
+            ...(data.portfolioItemIds && {
+                portfolioItems: { set: data.portfolioItemIds.map(id => ({ id })) }
+            }),
             items: {
                 create: [
                     ...(data.items || []).map(i => ({
@@ -863,5 +920,62 @@ export async function updateUserPassword(userId: string, passwordHash: string) {
     return await prisma.user.update({
         where: { id: userId },
         data: { password: passwordHash }
+    });
+}
+
+// --- Portfolio Functions ---
+
+export async function getPortfolioItems() {
+    const session = await getSession();
+    if (!session || !session.companyId) return [];
+    return await prisma.portfolioItem.findMany({
+        where: { companyId: session.companyId },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
+export async function createPortfolioItem(data: { type: string; title?: string; url: string; thumbnailUrl?: string }) {
+    const session = await getSessionOrThrow();
+    return await prisma.portfolioItem.create({
+        data: {
+            ...data,
+            companyId: session.companyId,
+            type: data.type, // Explicitly map
+        }
+    });
+}
+
+export async function deletePortfolioItem(id: string) {
+    const session = await getSessionOrThrow();
+    return await prisma.portfolioItem.delete({
+        where: { id, companyId: session.companyId }
+    });
+}
+
+// --- Client Logo Functions ---
+
+export async function getClientLogos() {
+    const session = await getSession();
+    if (!session || !session.companyId) return [];
+    return await prisma.clientLogo.findMany({
+        where: { companyId: session.companyId },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
+export async function createClientLogo(data: { name?: string; url: string }) {
+    const session = await getSessionOrThrow();
+    return await prisma.clientLogo.create({
+        data: {
+            ...data,
+            companyId: session.companyId
+        }
+    });
+}
+
+export async function deleteClientLogo(id: string) {
+    const session = await getSessionOrThrow();
+    return await prisma.clientLogo.delete({
+        where: { id, companyId: session.companyId }
     });
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TemplateSelectorDialog } from "@/components/template-selector-dialog";
 import {
     Plus, Settings, Package, DollarSign, Users, LogOut, Shield, ClipboardList, Menu, Home
 } from "lucide-react";
@@ -137,12 +138,12 @@ export function AppHeader({ session, logoutAction }: AppHeaderProps) {
                         </Link>
 
                         {/* New Proposal Button */}
-                        <Link href="/proposals/new">
+                        <TemplateSelectorDialog>
                             <Button size="sm" className="bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700 shadow-lg shadow-violet-500/25">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Nova Proposta
                             </Button>
-                        </Link>
+                        </TemplateSelectorDialog>
 
                         {/* Logout - After New Proposal */}
                         <form action={logoutAction}>
@@ -154,12 +155,12 @@ export function AppHeader({ session, logoutAction }: AppHeaderProps) {
 
                     {/* Mobile Navigation */}
                     <div className="flex lg:hidden items-center gap-2">
-                        <Link href="/proposals/new">
+                        <TemplateSelectorDialog>
                             <Button size="sm" className="bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700 shadow-lg shadow-violet-500/25">
                                 <Plus className="h-4 w-4" />
                                 <span className="hidden sm:inline ml-2">Nova Proposta</span>
                             </Button>
-                        </Link>
+                        </TemplateSelectorDialog>
 
                         <Sheet open={isOpen} onOpenChange={setIsOpen}>
                             <SheetTrigger asChild>

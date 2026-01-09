@@ -4,15 +4,29 @@ import { ProposalForm } from '@/components/proposal-form';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import Link from 'next/link';
-import { ChevronLeft, FileText, LogOut } from 'lucide-react';
+import { ChevronLeft, FileText, LogOut, Layers } from 'lucide-react';
+import { ProposalTemplateId, PROPOSAL_TEMPLATES } from '@/lib/proposal-templates';
 
-export default async function NewProposalPage() {
+type NewProposalPageProps = {
+    searchParams: Promise<{ template?: string }>;
+};
+
+export default async function NewProposalPage({ searchParams }: NewProposalPageProps) {
+    const params = await searchParams;
     const company = await fetchCompany();
     const products = await fetchProducts();
     const paymentMethods = await fetchPaymentMethods();
     const proposalNotes = await fetchProposalNotes();
     const paymentTermsTemplates = await fetchPaymentTermsTemplates();
     const clients = await fetchClients();
+
+    // Validate template parameter
+    const validTemplates: ProposalTemplateId[] = ['classic', 'modern', 'minimal'];
+    const template: ProposalTemplateId = validTemplates.includes(params.template as ProposalTemplateId)
+        ? (params.template as ProposalTemplateId)
+        : 'classic';
+
+    const templateInfo = PROPOSAL_TEMPLATES.find(t => t.id === template);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -29,12 +43,24 @@ export default async function NewProposalPage() {
                             </Link>
                             <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
                             <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                                <div
+                                    className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${templateInfo?.colors.primary || '#6366f1'}, ${templateInfo?.colors.secondary || '#3b82f6'})`,
+                                    }}
+                                >
                                     <FileText className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
                                     <h1 className="text-xl font-bold text-slate-900 dark:text-white">Nova Proposta</h1>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Crie uma proposta comercial</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Template: <span className="font-medium text-slate-700 dark:text-slate-300">{templateInfo?.name || 'Clássico'}</span>
+                                        </p>
+                                        <Link href="/proposals/new" className="text-xs text-violet-500 hover:underline">
+                                            alterar
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -58,6 +84,8 @@ export default async function NewProposalPage() {
                     proposalNotes={proposalNotes}
                     paymentTermsTemplates={paymentTermsTemplates}
                     clients={clients}
+                    selectedTemplate={template}
+                    portfolioItems={(company as any)?.portfolioItems || []}
                 />
             </main>
         </div>

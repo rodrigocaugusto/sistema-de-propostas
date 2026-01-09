@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '25mb',
+    },
+  },
   images: {
     remotePatterns: [
       {
@@ -9,15 +14,15 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'randhost.s3.us-east-1.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'randhost.s3.amazonaws.com',
+      },
+      {
+        protocol: 'https',
         hostname: '*.backblazeb2.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'sistema-proposal-dl.s3.us-west-004.backblazeb2.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'f004.backblazeb2.com',
       },
     ],
     // Also allow unoptimized images (for img tags)
@@ -26,3 +31,5 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// Trigger restart for Schema update

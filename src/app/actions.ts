@@ -118,7 +118,7 @@ export async function fetchProposals() {
     return await getProposals();
 }
 
-export async function createNewProposal(data: Omit<Proposal, 'id' | 'createdAt' | 'status'>) {
+export async function createNewProposal(data: Omit<Proposal, 'id' | 'createdAt' | 'status' | 'portfolioItems'> & { portfolioItemIds?: string[] }) {
     const result = await createProposal(data);
 
     // Get full proposal with all data
@@ -410,5 +410,94 @@ export async function removePaymentTermsTemplate(id: string) {
     const result = await deletePaymentTermsTemplate(id);
     revalidatePath('/settings');
     revalidatePath('/proposals/new');
+    return result;
+}
+
+// --- Portfolio Actions ---
+
+export async function fetchPortfolioItems() {
+    return await prisma.portfolioItem.findMany({
+        where: { companyId: (await getSession())?.companyId },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
+export async function savePortfolioItem(data: { type: 'video' | 'image'; title?: string; url: string; thumbnailUrl?: string; items?: any[] }) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
+
+    let finalUrl = data.url;
+    let finalThumbnail = data.thumbnailUrl;
+
+    // Serialize items to URL field to support galleries without DB schema changes
+    if (data.items && data.items.length > 0) {
+        finalUrl = `JSON::${JSON.stringify(data.items)}`;
+        // Ensure thumbnail from first item
+        if (!finalThumbnail) {
+            const first = data.items[0];
+            finalThumbnail = first.thumbnail || first.thumbnailUrl || (first.type === 'image' ? first.url : undefined);
+        }
+    }
+
+    // Remove 'items' from the payload passed to Prisma
+    const { items, ...cleanData } = data;
+
+    const result = await prisma.portfolioItem.create({
+        data: {
+            ...cleanData,
+            url: finalUrl,
+            thumbnailUrl: finalThumbnail,
+            companyId: session.companyId!
+        }
+    });
+    revalidatePath('/settings');
+    return result;
+}
+
+export async function removePortfolioItem(id: string) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
+
+    // Ensure ownership
+    const existing = await prisma.portfolioItem.findFirst({ where: { id, companyId: session.companyId } });
+    if (!existing) throw new Error("Access denied");
+
+    const result = await prisma.portfolioItem.delete({ where: { id } });
+    revalidatePath('/settings');
+    return result;
+}
+
+// --- Client Logos Actions ---
+
+export async function fetchClientLogos() {
+    return await prisma.clientLogo.findMany({
+        where: { companyId: (await getSession())?.companyId },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
+export async function saveClientLogo(data: { name?: string; url: string }) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
+
+    const result = await prisma.clientLogo.create({
+        data: {
+            ...data,
+            companyId: session.companyId!
+        }
+    });
+    revalidatePath('/settings');
+    return result;
+}
+
+export async function removeClientLogo(id: string) {
+    const session = await getSession();
+    if (session?.role !== 'admin') throw new Error("Acesso negado");
+
+    const existing = await prisma.clientLogo.findFirst({ where: { id, companyId: session.companyId } });
+    if (!existing) throw new Error("Access denied");
+
+    const result = await prisma.clientLogo.delete({ where: { id } });
+    revalidatePath('/settings');
     return result;
 }

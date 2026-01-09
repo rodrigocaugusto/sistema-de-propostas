@@ -1,18 +1,30 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
+
+// Check if S3 is configured
+const isS3Configured = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_BUCKET_NAME);
 
 // Configure AWS S3 Client
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'us-east-1',
-    credentials: {
+const credentials = isS3Configured
+    ? {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
-});
+    }
+    : undefined;
+
+const s3Client = isS3Configured ? new S3Client({
+    region: process.env.AWS_REGION || 'us-east-1',
+    endpoint: process.env.AWS_ENDPOINT,
+    credentials,
+}) : null;
 
 export async function POST(request: NextRequest) {
+    console.log('Starting upload...');
+    console.log('S3 Configured:', isS3Configured);
+
     try {
         const formData = await request.formData();
         const file = formData.get('file') as File;
@@ -33,43 +45,89 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024; // 5MB
+        // Validate file size (max 25MB)
+        const maxSize = 25 * 1024 * 1024; // 25MB
         if (file.size > maxSize) {
             return NextResponse.json(
-                { error: 'Arquivo muito grande. Máximo permitido: 5MB' },
+                { error: 'Arquivo muito grande. Máximo permitido: 25MB' },
                 { status: 400 }
             );
         }
 
-        // Create unique filename
-        const timestamp = Date.now();
-        const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const fileName = `logos/${timestamp}_${cleanName}`;
-        const bucketName = process.env.AWS_BUCKET_NAME || 'randhost';
+        // Convert to WebP using sharp if it's an image (excluding SVG)
+        let processedBuffer: Buffer;
+        let contentType = file.type;
+        let extension = file.name.split('.').pop();
 
-        if (!bucketName) {
-            throw new Error("AWS_BUCKET_NAME is not defined");
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        if (file.type !== 'image/svg+xml') {
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                const sharp = require('sharp');
+                processedBuffer = await sharp(buffer)
+                    .webp({ quality: 80 })
+                    .toBuffer();
+                contentType = 'image/webp';
+                extension = 'webp';
+            } catch (e) {
+                console.warn("Sharp processing failed or not available:", e);
+                processedBuffer = buffer;
+            }
+        } else {
+            processedBuffer = buffer;
         }
 
-        // Upload to S3
-        const parallelUploads3 = new Upload({
-            client: s3Client,
-            params: {
-                Bucket: bucketName,
-                Key: fileName,
-                Body: file.stream(),
-                ContentType: file.type,
-                // ACL: 'public-read' // Uncomment if your bucket is public and requires explicit ACL
-            },
-        });
+        // Create unique filename
+        const timestamp = Date.now();
+        const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\.[^/.]+$/, "");
+        const fileName = `${timestamp}_${cleanName}.${extension}`;
 
-        await parallelUploads3.done();
+        // If S3 is configured, upload to S3
+        if (isS3Configured && s3Client) {
+            const bucketName = process.env.AWS_BUCKET_NAME!;
+            const s3Key = `uploads/${fileName}`;
 
-        // Construct Public URL
-        // Standard AWS S3 URL format: https://<BucketName>.s3.<Region>.amazonaws.com/<Key>
-        const region = process.env.AWS_REGION || 'us-east-1';
-        const publicUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${fileName}`;
+            const parallelUploads3 = new Upload({
+                client: s3Client,
+                params: {
+                    Bucket: bucketName,
+                    Key: s3Key,
+                    Body: processedBuffer,
+                    ContentType: contentType,
+                },
+            });
+
+            await parallelUploads3.done();
+
+            // Construct Public URL
+            const region = process.env.AWS_REGION || 'us-east-1';
+            let publicUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${s3Key}`;
+
+            if (process.env.AWS_ENDPOINT && process.env.AWS_ENDPOINT.includes('backblazeb2.com')) {
+                const endpointClean = process.env.AWS_ENDPOINT.replace(/^https?:\/\//, '');
+                publicUrl = `https://${bucketName}.${endpointClean}/${s3Key}`;
+            }
+
+            return NextResponse.json({
+                success: true,
+                url: publicUrl,
+                fileName: s3Key
+            });
+        }
+
+        // FALLBACK: Save to local filesystem
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+
+        // Ensure directory exists
+        await mkdir(uploadDir, { recursive: true });
+
+        const filePath = path.join(uploadDir, fileName);
+        await writeFile(filePath, processedBuffer);
+
+        // Return public URL
+        const publicUrl = `/uploads/${fileName}`;
 
         return NextResponse.json({
             success: true,
@@ -78,7 +136,7 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error('S3 Upload error:', error);
+        console.error('Upload error:', error);
         return NextResponse.json(
             { error: 'Erro ao fazer upload do arquivo: ' + error.message },
             { status: 500 }

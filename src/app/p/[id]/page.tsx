@@ -1,8 +1,11 @@
 import { fetchCompany, fetchProposal } from "@/app/actions";
 import { getProducts } from "@/lib/db";
 import { ProposalView } from "@/components/proposal-view";
+import { ProposalViewModern } from "@/components/proposal-view-modern";
+import { ProposalViewMinimal } from "@/components/proposal-view-minimal";
 import { notFound } from "next/navigation";
 import { Metadata } from 'next';
+import { ProposalTemplateId } from "@/lib/proposal-templates";
 
 type Props = {
     params: Promise<{ id: string }>
@@ -27,6 +30,29 @@ export async function generateMetadata(
     }
 }
 
+// Component to render the correct template based on proposal.template
+function ProposalTemplate({
+    template,
+    proposal,
+    company,
+    products
+}: {
+    template: ProposalTemplateId;
+    proposal: any;
+    company: any;
+    products: any[];
+}) {
+    switch (template) {
+        case 'modern':
+            return <ProposalViewModern proposal={proposal} company={company} products={products} />;
+        case 'minimal':
+            return <ProposalViewMinimal proposal={proposal} company={company} products={products} />;
+        case 'classic':
+        default:
+            return <ProposalView proposal={proposal} company={company} products={products} />;
+    }
+}
+
 export default async function ProposalPage({ params }: Props) {
     const { id } = await params;
     const proposal = await fetchProposal(id);
@@ -37,5 +63,15 @@ export default async function ProposalPage({ params }: Props) {
         notFound();
     }
 
-    return <ProposalView proposal={proposal} company={company} products={products as any} />;
+    // Get template from proposal, default to 'classic'
+    const template = ((proposal as any).template || 'classic') as ProposalTemplateId;
+
+    return (
+        <ProposalTemplate
+            template={template}
+            proposal={proposal}
+            company={company}
+            products={products as any}
+        />
+    );
 }
