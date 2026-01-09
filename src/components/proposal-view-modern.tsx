@@ -331,9 +331,9 @@ export function ProposalViewModern({ proposal, company, products = [] }: Proposa
                 )}
 
                 {/* Portfolio Section */}
-                {(proposal as any).includePortfolio && company?.portfolioItems && company.portfolioItems.length > 0 && (
+                {(proposal as any).includePortfolio && (proposal as any).portfolioItems && (proposal as any).portfolioItems.length > 0 && (
                     <motion.section variants={itemAnim}>
-                        <PortfolioSection items={company.portfolioItems} />
+                        <PortfolioSection items={(proposal as any).portfolioItems} />
                     </motion.section>
                 )}
 
@@ -374,8 +374,8 @@ export function ProposalViewModern({ proposal, company, products = [] }: Proposa
                                             <h3 className="font-semibold text-lg text-white">{item.name}</h3>
                                             <p className="text-white/60 text-sm">{item.description}</p>
                                         </div>
-                                        <div className="relative z-10 text-right">
-                                            <div className="text-xs text-white/40">{item.quantity}x de</div>
+                                        <div className="relative z-10 text-left md:text-right w-full md:w-auto flex flex-row md:flex-col justify-between items-center md:items-end mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10">
+                                            <div className="text-xs text-white/40 order-1 md:order-none">{item.quantity}x de</div>
                                             {hasDiscount ? (
                                                 <div className="flex flex-col items-end">
                                                     <span className="text-xs text-white/40 line-through">
@@ -433,8 +433,8 @@ export function ProposalViewModern({ proposal, company, products = [] }: Proposa
                                             <h3 className="font-semibold text-lg text-white">{item.name}</h3>
                                             <p className="text-white/60 text-sm">{item.description}</p>
                                         </div>
-                                        <div className="relative z-10 text-right">
-                                            <div className="text-xs text-white/40">{item.quantity}x de</div>
+                                        <div className="relative z-10 text-left md:text-right w-full md:w-auto flex flex-row md:flex-col justify-between items-center md:items-end mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10">
+                                            <div className="text-xs text-white/40 order-1 md:order-none">{item.quantity}x de</div>
                                             {hasDiscount ? (
                                                 <div className="flex flex-col items-end">
                                                     <span className="text-xs text-white/40 line-through">

@@ -245,7 +245,7 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
                             <span>•</span>
                             <span>Válido por {proposal.validityDays || 15} dias</span>
                         </div>
-                        <h1 className="text-4xl md:text-6xl font-light tracking-tight text-zinc-900 dark:text-zinc-100">
+                        <h1 className="text-3xl md:text-6xl font-light tracking-tight text-zinc-900 dark:text-zinc-100">
                             Proposta Comercial
                         </h1>
                         <div className="h-px w-20 bg-sky-500"></div>
@@ -299,9 +299,9 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
                 )}
 
                 {/* Portfolio Section */}
-                {(proposal as any).includePortfolio && company?.portfolioItems && company.portfolioItems.length > 0 && (
+                {(proposal as any).includePortfolio && (proposal as any).portfolioItems && (proposal as any).portfolioItems.length > 0 && (
                     <motion.section variants={itemAnim} className="mb-16">
-                        <PortfolioSection items={company.portfolioItems} />
+                        <PortfolioSection items={(proposal as any).portfolioItems} />
                     </motion.section>
                 )}
 
@@ -325,7 +325,7 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
                                     <motion.div
                                         key={idx}
                                         whileHover={{ x: 4 }}
-                                        className="py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+                                        className="py-4 md:py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 group"
                                     >
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3">
@@ -338,9 +338,9 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
                                             </div>
                                             <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">{item.description}</p>
                                         </div>
-                                        <div className="text-right shrink-0">
+                                        <div className="text-left md:text-right shrink-0 flex flex-row md:flex-col justify-between items-center md:items-end w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800">
                                             {item.quantity > 1 && (
-                                                <p className="text-xs text-zinc-400 dark:text-zinc-600 mb-1">{item.quantity}×</p>
+                                                <p className="text-xs text-zinc-400 dark:text-zinc-600 mb-1 order-1 md:order-none">{item.quantity}×</p>
                                             )}
                                             {hasDiscount && (
                                                 <p className="text-sm text-zinc-400 dark:text-zinc-600 line-through">
@@ -383,7 +383,7 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
                                     <motion.div
                                         key={idx}
                                         whileHover={{ x: 4 }}
-                                        className="py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 group border-l-2 border-l-sky-500 pl-4"
+                                        className="py-4 md:py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 group border-l-2 border-l-sky-500 pl-4"
                                     >
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3">
@@ -396,9 +396,9 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
                                             </div>
                                             <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">{item.description}</p>
                                         </div>
-                                        <div className="text-right shrink-0">
+                                        <div className="text-left md:text-right shrink-0 flex flex-row md:flex-col justify-between items-center md:items-end w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800">
                                             {item.quantity > 1 && (
-                                                <p className="text-xs text-zinc-400 dark:text-zinc-600 mb-1">{item.quantity}×</p>
+                                                <p className="text-xs text-zinc-400 dark:text-zinc-600 mb-1 order-1 md:order-none">{item.quantity}×</p>
                                             )}
                                             {hasDiscount && (
                                                 <p className="text-sm text-zinc-400 dark:text-zinc-600 line-through">

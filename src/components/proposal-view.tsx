@@ -179,8 +179,8 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full bg-background/80 backdrop-blur-md border-b sticky top-0 z-50 no-print"
             >
-                <div className="container max-w-5xl mx-auto p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
+                <div className="container max-w-5xl mx-auto px-4 py-3 md:p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-2 md:gap-3">
                         {company?.logoUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -268,7 +268,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                         </div>
                     )}
                     <h1
-                        className="text-4xl md:text-6xl font-extrabold tracking-tight"
+                        className="text-3xl md:text-6xl font-extrabold tracking-tight"
                         style={proposal.customColors?.introductionBg && isDarkColor(proposal.customColors.introductionBg)
                             ? { color: '#ffffff' }
                             : {}}
@@ -277,7 +277,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                             Proposta Comercial
                         </span>
                     </h1>
-                    <p className="text-xl md:text-2xl" style={getContrastMutedStyle(proposal.customColors?.introductionBg)}>
+                    <p className="text-lg md:text-2xl" style={getContrastMutedStyle(proposal.customColors?.introductionBg)}>
                         Preparada especialmente para <span className="font-semibold" style={getContrastTextStyle(proposal.customColors?.introductionBg)}>{proposal.clientName}</span>
                         {proposal.clientCompany && (
                             <span className="block text-lg mt-1 font-medium opacity-80">{proposal.clientCompany}</span>
@@ -290,7 +290,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                     </div>
 
                     {proposal.introduction && (
-                        <div className="max-w-3xl mx-auto mt-8 bg-card border rounded-xl p-6 shadow-sm">
+                        <div className="max-w-3xl mx-auto mt-8 bg-card border rounded-xl p-4 md:p-6 shadow-sm">
                             <h3 className="font-semibold text-sm mb-3 text-slate-700 dark:text-slate-300">Apresentação</h3>
                             <div
                                 className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed prose prose-sm max-w-none dark:prose-invert"
@@ -326,9 +326,9 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                 )}
 
                 {/* Portfolio Section */}
-                {(proposal as any).includePortfolio && company?.portfolioItems && company.portfolioItems.length > 0 && (
+                {(proposal as any).includePortfolio && (proposal as any).portfolioItems && (proposal as any).portfolioItems.length > 0 && (
                     <motion.section variants={itemAnim}>
-                        <PortfolioSection items={company.portfolioItems} />
+                        <PortfolioSection items={(proposal as any).portfolioItems} />
                     </motion.section>
                 )}
 
@@ -357,7 +357,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                                     <motion.div
                                         key={idx}
                                         whileHover={{ scale: 1.01 }}
-                                        className="bg-card border rounded-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm relative overflow-hidden"
+                                        className="bg-card border rounded-xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm relative overflow-hidden"
                                     >
                                         {hasDiscount && (
                                             <div className="absolute top-0 right-0 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">
@@ -399,7 +399,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
 
                 {/* Recurring Items */}
                 {proposal.recurringItems && proposal.recurringItems.length > 0 && (
-                    <motion.section variants={itemAnim} className="space-y-6 rounded-xl p-6" style={{ backgroundColor: proposal.customColors?.recurringBg || '#eff6ff' }}>
+                    <motion.section variants={itemAnim} className="space-y-6 rounded-xl p-4 md:p-6" style={{ backgroundColor: proposal.customColors?.recurringBg || '#eff6ff' }}>
                         <div className="flex items-center gap-3 mb-6">
                             <div className={`h-8 w-1 rounded-full ${isDarkColor(proposal.customColors?.recurringBg || '#eff6ff') ? 'bg-white' : 'bg-blue-500'}`}></div>
                             <h2 className="text-2xl font-bold" style={getContrastTextStyle(proposal.customColors?.recurringBg)}>Mensalidade Recorrente</h2>
@@ -413,7 +413,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                                     <motion.div
                                         key={idx}
                                         whileHover={{ scale: 1.01 }}
-                                        className="bg-card border-l-4 border-l-blue-500 rounded-r-xl rounded-l-none border-y border-r p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm relative overflow-hidden"
+                                        className="bg-card border-l-4 border-l-blue-500 rounded-r-xl rounded-l-none border-y border-r p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm relative overflow-hidden"
                                     >
                                         {hasDiscount && (
                                             <div className="absolute top-0 right-0 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">

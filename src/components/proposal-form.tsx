@@ -60,6 +60,15 @@ interface ClientType {
     phone?: string | null;
 }
 
+const MODERN_THEMES = [
+    { name: 'Aurora', colors: { gradientStart: '#8b5cf6', gradientMiddle: '#a855f7', gradientEnd: '#ec4899', accentColor: '#fbbf24' } },
+    { name: 'Ocean', colors: { gradientStart: '#0ea5e9', gradientMiddle: '#3b82f6', gradientEnd: '#6366f1', accentColor: '#38bdf8' } },
+    { name: 'Forest', colors: { gradientStart: '#10b981', gradientMiddle: '#059669', gradientEnd: '#047857', accentColor: '#34d399' } },
+    { name: 'Sunset', colors: { gradientStart: '#f59e0b', gradientMiddle: '#ea580c', gradientEnd: '#dc2626', accentColor: '#fbbf24' } },
+    { name: 'Midnight', colors: { gradientStart: '#1e1b4b', gradientMiddle: '#312e81', gradientEnd: '#4338ca', accentColor: '#818cf8' } },
+    { name: 'Gold', colors: { gradientStart: '#78350f', gradientMiddle: '#b45309', gradientEnd: '#f59e0b', accentColor: '#fcd34d' } }
+];
+
 interface PaymentTermsTemplateType {
     id: string;
     title: string;
@@ -152,6 +161,12 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
         recurringBg: '#eff6ff', // blue-50 equivalent
         totalBg: '#1e1e1e', // dark background for investment summary
         notesBg: '#FFFFFF',
+        // Modern Template Defaults
+        gradientStart: '#8b5cf6',
+        gradientMiddle: '#a855f7',
+        gradientEnd: '#ec4899',
+        cardBg: 'rgba(255,255,255,0.1)',
+        accentColor: '#fbbf24',
     });
 
     // Toggle payment method selection
@@ -1378,6 +1393,50 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
                                 <Palette className="h-4 w-4 text-pink-500" />
                                 <Label className="text-sm font-medium">Personalizar Cores do Email</Label>
                             </div>
+
+                            {/* Modern Template Gradient Selector */}
+                            {selectedTemplate === 'modern' && (
+                                <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border mb-4">
+                                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Tema da Proposta Moderna
+                                    </Label>
+                                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                        {MODERN_THEMES.map((theme) => (
+                                            <button
+                                                key={theme.name}
+                                                type="button"
+                                                onClick={() => setCustomColors(prev => ({ ...prev, ...theme.colors }))}
+                                                className="group relative flex flex-col items-center gap-1.5 p-1"
+                                            >
+                                                <div
+                                                    className="w-full aspect-square rounded-lg shadow-sm border group-hover:scale-105 transition-transform"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientMiddle}, ${theme.colors.gradientEnd})`
+                                                    }}
+                                                />
+                                                <span className="text-[10px] font-medium text-muted-foreground">{theme.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 mt-2">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground">Início Gradiente</Label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="color" value={(customColors as any).gradientStart} onChange={(e) => setCustomColors(prev => ({ ...prev, gradientStart: e.target.value }))} className="w-6 h-6 rounded cursor-pointer border shadow-sm" />
+                                                <span className="text-[10px] font-mono">{(customColors as any).gradientStart}</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground">Fim Gradiente</Label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="color" value={(customColors as any).gradientEnd} onChange={(e) => setCustomColors(prev => ({ ...prev, gradientEnd: e.target.value }))} className="w-6 h-6 rounded cursor-pointer border shadow-sm" />
+                                                <span className="text-[10px] font-mono">{(customColors as any).gradientEnd}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 <div className="space-y-2">
                                     <Label className="text-xs text-muted-foreground">Fundo Geral</Label>

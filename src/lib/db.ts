@@ -320,9 +320,11 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
             includePortfolio: data.includePortfolio ?? false,
             includeClientLogos: data.includeClientLogos ?? false,
             clientLogosGrayscale: data.clientLogosGrayscale ?? false,
-            // portfolioItems: {
-            //     connect: (data.portfolioItemIds || []).map(id => ({ id }))
-            // },
+            ...(data.portfolioItemIds && data.portfolioItemIds.length > 0 && {
+                portfolioItems: {
+                    connect: data.portfolioItemIds.map(id => ({ id }))
+                }
+            }),
             items: {
                 create: [
                     ...data.items.map(i => ({
@@ -377,7 +379,7 @@ export async function getProposal(id: string) {
         where: { id },
         include: {
             items: true,
-            // portfolioItems: true,
+            portfolioItems: true,
             createdBy: {
                 select: { name: true, email: true, phone: true } // Fetch creator details
             }
