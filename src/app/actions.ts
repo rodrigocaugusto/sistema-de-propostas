@@ -119,38 +119,46 @@ export async function fetchProposals() {
 }
 
 export async function createNewProposal(data: Omit<Proposal, 'id' | 'createdAt' | 'status' | 'portfolioItems'> & { portfolioItemIds?: string[] }) {
-    const result = await createProposal(data);
+    try {
+        const result = await createProposal(data);
 
-    // Get full proposal with all data
-    const fullProposal = await getProposal(result.id);
+        // Get full proposal with all data
+        const fullProposal = await getProposal(result.id);
 
-    if (fullProposal) {
-        // Trigger Webhook
-        await sendProposalWebhook('created', fullProposal);
+        if (fullProposal) {
+            // Trigger Webhook
+            try {
+                await sendProposalWebhook('created', fullProposal);
+            } catch (webhookError) {
+                console.error("Erro ao enviar webhook:", webhookError);
+            }
 
-        // Send email notification to client
-        try {
-            const company = await getCompany();
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
-            const proposalUrl = `${baseUrl}/p/${fullProposal.id}`;
+            // Send email notification to client
+            try {
+                const company = await getCompany();
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
+                const proposalUrl = `${baseUrl}/p/${fullProposal.id}`;
 
-            const { sendProposalNotification } = await import('@/lib/email');
-            await sendProposalNotification(fullProposal.clientEmail, {
-                clientName: fullProposal.clientName,
-                companyName: company?.name || 'Empresa',
-                companyLogo: company?.logoUrl || null,
-                proposalUrl,
-            });
-            console.log(`Email sent to client for proposal ${fullProposal.id}`);
-        } catch (error) {
-            console.error('Failed to send proposal email:', error);
-            // Don't fail the action if email sending fails
+                const { sendProposalNotification } = await import('@/lib/email');
+                if (company) {
+                    await sendProposalNotification(fullProposal.clientEmail, {
+                        clientName: fullProposal.clientName,
+                        companyName: company.name || 'Empresa',
+                        proposalUrl,
+                    });
+                }
+            } catch (emailError) {
+                console.error("Erro ao enviar email:", emailError);
+            }
         }
-    }
 
-    revalidatePath('/');
-    revalidatePath('/clients');
-    return result;
+        revalidatePath('/');
+        revalidatePath('/clients');
+        return result;
+    } catch (error) {
+        console.error("CRITICAL ERROR creating proposal:", error);
+        throw error;
+    }
 }
 
 export async function fetchProposal(id: string) {
