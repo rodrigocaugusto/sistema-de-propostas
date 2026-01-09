@@ -154,10 +154,10 @@ export async function createNewProposal(data: Omit<Proposal, 'id' | 'createdAt' 
 
         revalidatePath('/');
         revalidatePath('/clients');
-        return result;
-    } catch (error) {
+        return { success: true, data: result };
+    } catch (error: any) {
         console.error("CRITICAL ERROR creating proposal:", error);
-        throw error;
+        return { success: false, error: error.message || 'Unknown server error', details: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
     }
 }
 

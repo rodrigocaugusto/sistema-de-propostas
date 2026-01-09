@@ -372,7 +372,7 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
 
         setLoading(true);
         try {
-            const proposal = await createNewProposal({
+            const response = await createNewProposal({
                 clientName,
                 clientCompany: clientCompany || undefined,
                 clientEmail,
@@ -398,23 +398,31 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
                 clientLogosGrayscale,
                 portfolioItemIds: includePortfolio ? selectedPortfolioItemIds : []
             });
-            toast.success("Proposta criada com sucesso!");
-            const url = `/p/${proposal.id}`;
-            // Open in a sized window (popup style) instead of full tab
-            const width = 1100;
-            const height = 900;
-            const left = (window.screen.width - width) / 2;
-            const top = (window.screen.height - height) / 2;
-            const win = window.open(url, '_blank', `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`);
 
-            if (win) {
-                win.focus();
-                router.push('/dashboard');
+            if (response.success && response.data) {
+                const proposal = response.data;
+                toast.success("Proposta criada com sucesso!");
+                const url = `/p/${proposal.id}`;
+                // Open in a sized window (popup style) instead of full tab
+                const width = 1100;
+                const height = 900;
+                const left = (window.screen.width - width) / 2;
+                const top = (window.screen.height - height) / 2;
+                const win = window.open(url, '_blank', `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`);
+
+                if (win) {
+                    win.focus();
+                    router.push('/dashboard');
+                } else {
+                    router.push(url);
+                }
             } else {
-                router.push(url);
+                console.error("Erro retornado pelo servidor:", response.error);
+                toast.error(`Erro ao criar proposta: ${response.error || 'Verifique os dados e tente novamente.'}`);
             }
-        } catch {
-            toast.error("Erro ao criar proposta.");
+        } catch (err) {
+            console.error("Erro inesperado no frontend:", err);
+            toast.error("Erro inesperado ao criar proposta.");
         } finally {
             setLoading(false);
         }
