@@ -424,8 +424,11 @@ export async function removePaymentTermsTemplate(id: string) {
 // --- Portfolio Actions ---
 
 export async function fetchPortfolioItems() {
+    const session = await getSession();
+    if (!session?.companyId) return [];
+
     return await prisma.portfolioItem.findMany({
-        where: { companyId: (await getSession())?.companyId },
+        where: { companyId: session.companyId },
         orderBy: { createdAt: 'desc' }
     });
 }
@@ -478,8 +481,11 @@ export async function removePortfolioItem(id: string) {
 // --- Client Logos Actions ---
 
 export async function fetchClientLogos() {
+    const session = await getSession();
+    if (!session?.companyId) return [];
+
     return await prisma.clientLogo.findMany({
-        where: { companyId: (await getSession())?.companyId },
+        where: { companyId: session.companyId },
         orderBy: { createdAt: 'desc' }
     });
 }
