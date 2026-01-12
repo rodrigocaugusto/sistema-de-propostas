@@ -1,10 +1,11 @@
 import { getSession } from "@/lib/auth";
 import { logoutAction } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { prisma } from "@/lib/db";
-import { BarChart3, Users, FileText, CheckCircle, TrendingUp, Award, Target } from "lucide-react";
+import { Users, FileText, CheckCircle, TrendingUp, Award, TrendingDown } from "lucide-react";
 import { redirect } from "next/navigation";
+import { SalesChart } from "./sales-chart";
 
 interface UserPerformance {
     id: string;
@@ -17,6 +18,8 @@ interface UserPerformance {
     proposalsRejected: number;
     totalValue: number;
     acceptedValue: number;
+    rejectedValue: number;
+    pendingValue: number;
     conversionRate: number;
 }
 
@@ -54,6 +57,14 @@ async function getUserPerformanceData(companyId: string): Promise<UserPerformanc
             .filter(p => p.status === 'accepted')
             .reduce((sum, p) => sum + p.totalOneTime + p.totalRecurring, 0);
 
+        const rejectedValue = proposals
+            .filter(p => p.status === 'rejected')
+            .reduce((sum, p) => sum + p.totalOneTime + p.totalRecurring, 0);
+
+        const pendingValue = proposals
+            .filter(p => ['sent', 'viewed', 'negotiating'].includes(p.status))
+            .reduce((sum, p) => sum + p.totalOneTime + p.totalRecurring, 0);
+
         const conversionRate = proposalsSent > 0
             ? (proposalsAccepted / proposalsSent) * 100
             : 0;
@@ -69,6 +80,8 @@ async function getUserPerformanceData(companyId: string): Promise<UserPerformanc
             proposalsRejected,
             totalValue,
             acceptedValue,
+            rejectedValue,
+            pendingValue,
             conversionRate
         };
     }).sort((a, b) => b.acceptedValue - a.acceptedValue); // Ordenar por valor aceito
@@ -87,10 +100,20 @@ export default async function ReportsPage() {
     const totalAccepted = performanceData.reduce((sum, u) => sum + u.proposalsAccepted, 0);
     const totalValue = performanceData.reduce((sum, u) => sum + u.totalValue, 0);
     const totalAcceptedValue = performanceData.reduce((sum, u) => sum + u.acceptedValue, 0);
+    const totalRejectedValue = performanceData.reduce((sum, u) => sum + u.rejectedValue, 0);
+    const totalPendingValue = performanceData.reduce((sum, u) => sum + u.pendingValue, 0);
     const overallConversion = totalProposalsSent > 0 ? (totalAccepted / totalProposalsSent) * 100 : 0;
 
     // Top performer
     const topPerformer = performanceData[0];
+
+    // Dados para os gráficos
+    const chartData = performanceData.map(user => ({
+        name: user.name.split(' ')[0], // Primeiro nome
+        vendido: user.acceptedValue,
+        perdido: user.rejectedValue,
+        pendente: user.pendingValue,
+    }));
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -124,15 +147,34 @@ export default async function ReportsPage() {
                     <Card className="border-l-4 border-l-emerald-500 bg-white dark:bg-slate-900 shadow-lg">
                         <CardHeader className="pb-2">
                             <div className="flex items-center justify-between">
-                                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Propostas Aceitas</CardTitle>
+                                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Valor Fechado</CardTitle>
                                 <div className="p-2 rounded-lg bg-emerald-500/10">
-                                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                    <TrendingUp className="h-4 w-4 text-emerald-500" />
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-slate-900 dark:text-white">{totalAccepted}</div>
-                            <p className="text-xs text-slate-500 mt-1">Fechamentos</p>
+                            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                                R$ {totalAcceptedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1">{totalAccepted} propostas aceitas</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-l-4 border-l-red-500 bg-white dark:bg-slate-900 shadow-lg">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Valor Perdido</CardTitle>
+                                <div className="p-2 rounded-lg bg-red-500/10">
+                                    <TrendingDown className="h-4 w-4 text-red-500" />
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                                R$ {totalRejectedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1">Propostas rejeitadas</p>
                         </CardContent>
                     </Card>
 
@@ -141,30 +183,13 @@ export default async function ReportsPage() {
                             <div className="flex items-center justify-between">
                                 <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Taxa de Conversão</CardTitle>
                                 <div className="p-2 rounded-lg bg-blue-500/10">
-                                    <TrendingUp className="h-4 w-4 text-blue-500" />
+                                    <CheckCircle className="h-4 w-4 text-blue-500" />
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-slate-900 dark:text-white">{overallConversion.toFixed(1)}%</div>
                             <p className="text-xs text-slate-500 mt-1">Média geral</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-amber-500 bg-white dark:bg-slate-900 shadow-lg">
-                        <CardHeader className="pb-2">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Valor Fechado</CardTitle>
-                                <div className="p-2 rounded-lg bg-amber-500/10">
-                                    <Award className="h-4 w-4 text-amber-500" />
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                                R$ {totalAcceptedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">Total aceito</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -187,6 +212,40 @@ export default async function ReportsPage() {
                             </div>
                         </CardContent>
                     </Card>
+                )}
+
+                {/* Gráficos */}
+                {chartData.length > 0 && (
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        {/* Gráfico de Barras - Vendido vs Perdido */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg">Vendido vs Perdido por Vendedor</CardTitle>
+                                <CardDescription>Comparativo de valores fechados e perdidos</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <SalesChart data={chartData} type="bar" />
+                            </CardContent>
+                        </Card>
+
+                        {/* Gráfico de Pizza - Distribuição Total */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg">Distribuição de Valores</CardTitle>
+                                <CardDescription>Proporção entre vendido, perdido e pendente</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <SalesChart
+                                    data={[
+                                        { name: 'Vendido', value: totalAcceptedValue, fill: '#10b981' },
+                                        { name: 'Perdido', value: totalRejectedValue, fill: '#ef4444' },
+                                        { name: 'Pendente', value: totalPendingValue, fill: '#f59e0b' },
+                                    ]}
+                                    type="pie"
+                                />
+                            </CardContent>
+                        </Card>
+                    </div>
                 )}
 
                 {/* Tabela de Desempenho por Vendedor */}
@@ -218,10 +277,9 @@ export default async function ReportsPage() {
                                             <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Vendedor</th>
                                             <th className="text-center py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Enviadas</th>
                                             <th className="text-center py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Aceitas</th>
-                                            <th className="text-center py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Pendentes</th>
-                                            <th className="text-center py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Rejeitadas</th>
                                             <th className="text-center py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Conversão</th>
-                                            <th className="text-right py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Valor Fechado</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-emerald-600 dark:text-emerald-400">💰 Vendido</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-red-600 dark:text-red-400">📉 Perdido</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -266,16 +324,6 @@ export default async function ReportsPage() {
                                                     </span>
                                                 </td>
                                                 <td className="py-4 px-4 text-center">
-                                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium text-sm">
-                                                        {user.proposalsPending}
-                                                    </span>
-                                                </td>
-                                                <td className="py-4 px-4 text-center">
-                                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium text-sm">
-                                                        {user.proposalsRejected}
-                                                    </span>
-                                                </td>
-                                                <td className="py-4 px-4 text-center">
                                                     <div className="flex items-center justify-center gap-2">
                                                         <div className="w-16 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                                             <div
@@ -289,8 +337,13 @@ export default async function ReportsPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
-                                                    <span className="font-semibold text-slate-900 dark:text-white">
+                                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                                                         R$ {user.acceptedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </td>
+                                                <td className="py-4 px-4 text-right">
+                                                    <span className="font-semibold text-red-600 dark:text-red-400">
+                                                        R$ {user.rejectedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                     </span>
                                                 </td>
                                             </tr>
