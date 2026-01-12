@@ -1,17 +1,17 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription, updateCompany, getCompanyInvoices, getAdminStats, adminGeneratePasswordForUser, adminResetUserPassword, startCompanyTrial, checkExpiredTrials, cancelSubscriptionImmediately } from './actions';
+import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription, updateCompany, getCompanyInvoices, getAdminStats, adminGeneratePasswordForUser, adminResetUserPassword, startCompanyTrial, checkExpiredTrials, cancelSubscriptionImmediately, impersonateCompanyAdmin } from './actions';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw, Edit, DollarSign, TrendingUp, Receipt, Download, Key, AlertTriangle, Clock, Timer, Zap } from 'lucide-react';
+import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw, Edit, DollarSign, TrendingUp, Receipt, Download, Key, AlertTriangle, Clock, Timer, Zap, LogIn } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/app/auth/actions';
 import { useRouter } from 'next/navigation';
@@ -106,7 +106,8 @@ export default function AdminDashboard() {
         phone: '',
         plan: '',
         extraUsers: 0,
-        extraProposals: 0
+        extraProposals: 0,
+        trialEndsAt: null as string | null
     });
     const [isUpdating, setIsUpdating] = useState(false);
 
@@ -116,8 +117,8 @@ export default function AdminDashboard() {
 
     const loadData = async () => {
         try {
-            const session = await getCurrentUser();
-            // Run background checks first (non-blocking for UI but good to ensure consistency)
+            await getCurrentUser();
+            // Run background checks first
             checkExpiredTrials().catch(console.error);
 
             const [companiesData, statsData] = await Promise.all([
@@ -191,20 +192,6 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleReactivateSubscription = async (id: string) => {
-        try {
-            const result = await reactivateCompanySubscription(id);
-            if (result.success) {
-                toast.success(result.message);
-                loadData();
-            } else {
-                toast.error(result.error);
-            }
-        } catch {
-            toast.error("Erro ao reativar assinatura");
-        }
-    };
-
     const openEditDialog = (company: Company) => {
         setSelectedCompany(company);
         setEditForm({
@@ -214,7 +201,8 @@ export default function AdminDashboard() {
             phone: company.phone || '',
             plan: company.plan,
             extraUsers: company.extraUsers || 0,
-            extraProposals: company.extraProposals || 0
+            extraProposals: company.extraProposals || 0,
+            trialEndsAt: company.trialEndsAt
         });
         setIsEditOpen(true);
     };
@@ -289,8 +277,6 @@ export default function AdminDashboard() {
         }
     };
 
-
-
     const handleCancelSubscriptionImmediately = async (id: string, companyName: string) => {
         if (!confirm(`ATENÇÃO: Deseja cancelar IMEDIATAMENTE a assinatura de "${companyName}"? O acesso será revogado agora.`)) {
             return;
@@ -321,6 +307,22 @@ export default function AdminDashboard() {
             }
         } catch {
             toast.error("Erro ao iniciar trial");
+        }
+    };
+
+    const handleImpersonate = async (id: string, name: string) => {
+        if (!confirm(`Deseja acessar o sistema como administrador da empresa "${name}"?`)) return;
+
+        try {
+            const result = await impersonateCompanyAdmin(id);
+            if (result.success) {
+                toast.success('Acesso autorizado. Redirecionando...');
+                window.location.href = '/dashboard';
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao realizar login");
         }
     };
 
@@ -532,18 +534,21 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="plan">Plano Inicial</Label>
-                                    <select
-                                        id="plan"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    <Select
                                         value={newCompany.plan}
-                                        onChange={e => setNewCompany({ ...newCompany, plan: e.target.value })}
+                                        onValueChange={(value) => setNewCompany({ ...newCompany, plan: value })}
                                     >
-                                        {Object.values(PLANS).map((plan) => (
-                                            <option key={plan.id} value={plan.id}>
-                                                {plan.name} - {plan.limits.proposals} props/mês
-                                            </option>
-                                        ))}
-                                    </select>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione um plano" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.values(PLANS).map((plan) => (
+                                                <SelectItem key={plan.id} value={plan.id}>
+                                                    {plan.name} - {plan.limits.proposals} propostas
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                             <DialogFooter>
@@ -559,7 +564,7 @@ export default function AdminDashboard() {
 
                 {/* Edit Company Dialog */}
                 <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                    <DialogContent className="sm:max-w-[600px]">
+                    <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Editar Empresa</DialogTitle>
                             <DialogDescription>
@@ -587,21 +592,38 @@ export default function AdminDashboard() {
                                     <Input id="edit-phone" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-plan">Plano</Label>
-                                <select
-                                    id="edit-plan"
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                    value={editForm.plan}
-                                    onChange={e => setEditForm({ ...editForm, plan: e.target.value })}
-                                >
-                                    <option value="trial">Trial (7 dias)</option>
-                                    {Object.values(PLANS).map((plan) => (
-                                        <option key={plan.id} value={plan.id}>
-                                            {plan.name} - {plan.limits.proposals} propostas/mês
-                                        </option>
-                                    ))}
-                                </select>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-plan">Plano</Label>
+                                    <Select
+                                        value={editForm.plan}
+                                        onValueChange={(value) => setEditForm(prev => ({ ...prev, plan: value }))}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione um plano" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.values(PLANS).map((plan) => (
+                                                <SelectItem key={plan.id} value={plan.id}>
+                                                    {plan.name} - {plan.limits.proposals} propostas
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-trialEndsAt">Fim do Trial / Validade</Label>
+                                    <Input
+                                        id="edit-trialEndsAt"
+                                        type="datetime-local"
+                                        value={editForm.trialEndsAt ? new Date(editForm.trialEndsAt).toISOString().slice(0, 16) : ''}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setEditForm({ ...editForm, trialEndsAt: val ? new Date(val).toISOString() : null });
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             {/* Extra Limits */}
@@ -888,6 +910,9 @@ export default function AdminDashboard() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-1">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleImpersonate(company.id, company.name)} className="h-8 w-8 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50" title="Acessar como Admin">
+                                                        <LogIn className="h-4 w-4" />
+                                                    </Button>
                                                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(company)} className="h-8 w-8 text-slate-500 hover:text-slate-700" title="Editar">
                                                         <Edit className="h-4 w-4" />
                                                     </Button>

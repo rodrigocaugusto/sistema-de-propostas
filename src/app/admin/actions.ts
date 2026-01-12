@@ -634,3 +634,67 @@ export async function getStripeSubscriptionInfo(companyId: string) {
     }
 }
 
+export async function impersonateUser(userId: string) {
+    await checkSuperAdmin();
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            return { success: false, error: 'Usuário não encontrado' };
+        }
+
+        const { createToken, setSession } = await import('@/lib/auth');
+
+        const token = await createToken({
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            companyId: user.companyId || undefined,
+            isSuperAdmin: user.isSuperAdmin,
+            phone: (user as any).phone,
+            avatarUrl: (user as any).avatarUrl,
+        });
+
+        await setSession(token);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Impersonate error:', error);
+        return { success: false, error: 'Erro ao acessar como usuário' };
+    }
+}
+
+export async function impersonateCompanyAdmin(companyId: string) {
+    await checkSuperAdmin();
+
+    try {
+        // Find the admin user of the company
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            include: {
+                users: {
+                    where: { role: 'admin' },
+                    take: 1
+                }
+            }
+        });
+
+        if (!company || company.users.length === 0) {
+            // Fallback: any user
+            const anyUser = await prisma.user.findFirst({
+                where: { companyId }
+            });
+            if (!anyUser) return { success: false, error: 'Nenhum usuário encontrado nesta empresa' };
+            return impersonateUser(anyUser.id);
+        }
+
+        return impersonateUser(company.users[0].id);
+    } catch (error: any) {
+        console.error('Impersonate company admin error:', error);
+        return { success: false, error: 'Erro ao acessar empresa' };
+    }
+}
+

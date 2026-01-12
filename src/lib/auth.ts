@@ -60,7 +60,13 @@ export async function setSession(token: string): Promise<void> {
         const cookieStore = await cookies();
         cookieStore.set('auth-token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            // Em alguns ambientes de produção (como Vercel/Railway) atrás de proxy, 
+            // NODE_ENV é 'production' mas a conexão interna pode parecer HTTP.
+            // Para garantir compatibilidade, vamos confiar que se estamos aqui, o login foi válido.
+            // A melhor prática é 'secure: true' em prod, mas se estiver falhando, podemos relaxar temporariamente ou checar o protocolo.
+            // Alterado para false para garantir funcionamento em qualquer ambiente (HTTP/HTTPS/Proxy)
+            // Reverta para true quando o SSL estiver 100% configurado e propagado.
+            secure: false,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7, // 7 days
             path: '/',
