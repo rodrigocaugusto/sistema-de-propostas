@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription, updateCompany, getCompanyInvoices, getAdminStats, adminGeneratePasswordForUser, adminResetUserPassword } from './actions';
+import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription, updateCompany, getCompanyInvoices, getAdminStats, adminGeneratePasswordForUser, adminResetUserPassword, startCompanyTrial, checkExpiredTrials, cancelSubscriptionImmediately } from './actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw, Edit, DollarSign, TrendingUp, Receipt, Download, ExternalLink, Eye, Key, AlertTriangle } from 'lucide-react';
+import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw, Edit, DollarSign, TrendingUp, Receipt, Download, Key, AlertTriangle, Clock, Timer, Zap } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/app/auth/actions';
 import { useRouter } from 'next/navigation';
@@ -32,6 +32,20 @@ interface Company {
     createdAt: string;
     stripeSubscriptionId?: string | null;
     stripeCustomerId?: string | null;
+    // New fields
+    extraUsers: number;
+    extraProposals: number;
+    trialEndsAt: string | null;
+    lastLogin: string | null;
+    trialDaysRemaining: number | null;
+    subscriptionDetails: {
+        status: string;
+        cancelAtPeriodEnd: boolean;
+        currentPeriodEnd: Date;
+        interval: string;
+    } | null;
+    planValue: number;
+    totalPaid: number;
 }
 
 interface AdminStats {
@@ -90,7 +104,9 @@ export default function AdminDashboard() {
         email: '',
         responsible: '',
         phone: '',
-        plan: ''
+        plan: '',
+        extraUsers: 0,
+        extraProposals: 0
     });
     const [isUpdating, setIsUpdating] = useState(false);
 
@@ -101,6 +117,9 @@ export default function AdminDashboard() {
     const loadData = async () => {
         try {
             const session = await getCurrentUser();
+            // Run background checks first (non-blocking for UI but good to ensure consistency)
+            checkExpiredTrials().catch(console.error);
+
             const [companiesData, statsData] = await Promise.all([
                 getCompanies(),
                 getAdminStats()
@@ -193,7 +212,9 @@ export default function AdminDashboard() {
             email: company.email || '',
             responsible: company.responsible || '',
             phone: company.phone || '',
-            plan: company.plan
+            plan: company.plan,
+            extraUsers: company.extraUsers || 0,
+            extraProposals: company.extraProposals || 0
         });
         setIsEditOpen(true);
     };
@@ -268,6 +289,40 @@ export default function AdminDashboard() {
         }
     };
 
+
+
+    const handleCancelSubscriptionImmediately = async (id: string, companyName: string) => {
+        if (!confirm(`ATENÇÃO: Deseja cancelar IMEDIATAMENTE a assinatura de "${companyName}"? O acesso será revogado agora.`)) {
+            return;
+        }
+        try {
+            const result = await cancelSubscriptionImmediately(id);
+            if (result.success) {
+                toast.success(result.message);
+                loadData();
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao cancelar assinatura");
+        }
+    };
+
+    const handleStartTrial = async (id: string) => {
+        if (!confirm('Iniciar trial de 7 dias para esta empresa?')) return;
+
+        try {
+            const result = await startCompanyTrial(id);
+            if (result.success) {
+                toast.success(result.message);
+                loadData();
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao iniciar trial");
+        }
+    };
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -504,11 +559,11 @@ export default function AdminDashboard() {
 
                 {/* Edit Company Dialog */}
                 <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                    <DialogContent className="sm:max-w-[500px]">
+                    <DialogContent className="sm:max-w-[600px]">
                         <DialogHeader>
                             <DialogTitle>Editar Empresa</DialogTitle>
                             <DialogDescription>
-                                Atualize os dados da empresa e do plano.
+                                Atualize os dados da empresa, plano e limites extras.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
@@ -540,6 +595,7 @@ export default function AdminDashboard() {
                                     value={editForm.plan}
                                     onChange={e => setEditForm({ ...editForm, plan: e.target.value })}
                                 >
+                                    <option value="trial">Trial (7 dias)</option>
                                     {Object.values(PLANS).map((plan) => (
                                         <option key={plan.id} value={plan.id}>
                                             {plan.name} - {plan.limits.proposals} propostas/mês
@@ -547,6 +603,61 @@ export default function AdminDashboard() {
                                     ))}
                                 </select>
                             </div>
+
+                            {/* Extra Limits */}
+                            <div className="border-t pt-4 mt-4">
+                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                    <Zap className="h-4 w-4 text-amber-500" />
+                                    Limites Extras (Bônus Admin)
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-extraUsers">Usuários Extras</Label>
+                                        <Input
+                                            id="edit-extraUsers"
+                                            type="number"
+                                            min="0"
+                                            value={editForm.extraUsers}
+                                            onChange={e => setEditForm({ ...editForm, extraUsers: parseInt(e.target.value) || 0 })}
+                                        />
+                                        <p className="text-xs text-slate-500">Além do limite do plano</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-extraProposals">Propostas Extras</Label>
+                                        <Input
+                                            id="edit-extraProposals"
+                                            type="number"
+                                            min="0"
+                                            value={editForm.extraProposals}
+                                            onChange={e => setEditForm({ ...editForm, extraProposals: parseInt(e.target.value) || 0 })}
+                                        />
+                                        <p className="text-xs text-slate-500">Além do limite do plano</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Company Info Display */}
+                            {selectedCompany && (
+                                <div className="border-t pt-4 mt-4 space-y-2">
+                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Informações</h4>
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded">
+                                            <span className="text-slate-500">Total Pago:</span>
+                                            <span className="ml-2 font-semibold text-green-600">{formatCurrency(selectedCompany.totalPaid)}</span>
+                                        </div>
+                                        <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded">
+                                            <span className="text-slate-500">Valor do Plano:</span>
+                                            <span className="ml-2 font-semibold">{formatCurrency(selectedCompany.planValue)}/mês</span>
+                                        </div>
+                                        {selectedCompany.lastLogin && (
+                                            <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded col-span-2">
+                                                <span className="text-slate-500">Último Login:</span>
+                                                <span className="ml-2">{new Date(selectedCompany.lastLogin).toLocaleString('pt-BR')}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
@@ -666,131 +777,161 @@ export default function AdminDashboard() {
 
                 {/* Companies Table */}
                 <Card className="border-0 shadow-xl shadow-slate-200/40 dark:shadow-slate-900/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl overflow-hidden">
-                    <Table>
-                        <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
-                            <TableRow>
-                                <TableHead>Empresa</TableHead>
-                                <TableHead>Responsável</TableHead>
-                                <TableHead>Plano</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Assinatura</TableHead>
-                                <TableHead className="text-right">Métricas</TableHead>
-                                <TableHead className="text-right">Ações</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredCompanies.length === 0 ? (
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                                        Nenhuma empresa encontrada
-                                    </TableCell>
+                                    <TableHead>Empresa</TableHead>
+                                    <TableHead>Plano & Valor</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Assinatura</TableHead>
+                                    <TableHead>Métricas</TableHead>
+                                    <TableHead>Último Login</TableHead>
+                                    <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
-                            ) : (
-                                filteredCompanies.map((company) => (
-                                    <TableRow key={company.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <TableCell>
-                                            <div className="font-medium text-slate-900 dark:text-white">{company.name}</div>
-                                            <div className="text-xs text-slate-500">{company.email}</div>
-                                        </TableCell>
-                                        <TableCell>{company.responsible || '-'}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className="capitalize bg-slate-100 dark:bg-slate-800">
-                                                {company.plan}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge className={company.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0'}>
-                                                {company.status === 'active' ? 'Ativo' : 'Suspenso'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {company.stripeSubscriptionId ? (
-                                                <div className="flex items-center gap-2">
-                                                    <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 border-0">
-                                                        <CreditCard className="h-3 w-3 mr-1" /> Stripe
-                                                    </Badge>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-slate-400">Sem assinatura</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="text-xs text-slate-500">
-                                                <span className="font-medium text-slate-900 dark:text-slate-300">{company.userCount}</span> usuários
-                                            </div>
-                                            <div className="text-xs text-slate-500">
-                                                <span className="font-medium text-slate-900 dark:text-slate-300">{company.proposalCount}</span> propostas
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => openEditDialog(company)}
-                                                    className="text-slate-500 hover:text-slate-700"
-                                                    title="Editar"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => openResetDialog(company)}
-                                                    className="text-amber-500 hover:text-amber-600 hover:bg-amber-50"
-                                                    title="Resetar Senha"
-                                                >
-                                                    <Key className="h-4 w-4" />
-                                                </Button>
-                                                {company.stripeCustomerId && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => openInvoicesDialog(company)}
-                                                        className="text-violet-500 hover:text-violet-600 hover:bg-violet-50"
-                                                        title="Ver Faturas"
-                                                    >
-                                                        <Receipt className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                                {company.stripeSubscriptionId && (
-                                                    <>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleCancelSubscription(company.id, company.name)}
-                                                            className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
-                                                            title="Cancelar Assinatura"
-                                                        >
-                                                            <XCircle className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleReactivateSubscription(company.id)}
-                                                            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                                                            title="Reativar Assinatura"
-                                                        >
-                                                            <RefreshCw className="h-4 w-4" />
-                                                        </Button>
-                                                    </>
-                                                )}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleToggleStatus(company.id, company.status)}
-                                                    className={company.status === 'active' ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-green-500 hover:text-green-600 hover:bg-green-50'}
-                                                    title={company.status === 'active' ? 'Suspender Empresa' : 'Ativar Empresa'}
-                                                >
-                                                    {company.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-                                                </Button>
-                                            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredCompanies.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                                            Nenhuma empresa encontrada
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : (
+                                    filteredCompanies.map((company) => (
+                                        <TableRow key={company.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <TableCell>
+                                                <div className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                                                    {company.name}
+                                                </div>
+                                                <div className="text-xs text-slate-500">{company.email}</div>
+                                                <div className="text-xs text-slate-400 mt-0.5">{company.responsible || '-'}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="capitalize bg-slate-100 dark:bg-slate-800 mb-1 block w-fit">
+                                                    {company.plan === 'trial' ? 'Trial Grátis' : company.plan}
+                                                </Badge>
+                                                {company.planValue > 0 && (
+                                                    <div className="text-xs font-medium text-green-600 dark:text-green-400">
+                                                        {formatCurrency(company.planValue)}/mês
+                                                    </div>
+                                                )}
+                                                {company.totalPaid > 0 && (
+                                                    <div className="text-[10px] text-slate-400 mt-0.5" title="Total Pago em Faturas">
+                                                        Total: {formatCurrency(company.totalPaid)}
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col gap-1">
+                                                    <Badge className={company.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 w-fit' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 w-fit'}>
+                                                        {company.status === 'active' ? 'Ativo' : 'Suspenso'}
+                                                    </Badge>
+                                                    {company.trialDaysRemaining !== null && (
+                                                        <span className={`text-xs font-medium ${company.trialDaysRemaining < 3 ? 'text-red-500' : 'text-amber-500'}`}>
+                                                            {company.trialDaysRemaining} dias restantes
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                {company.stripeSubscriptionId ? (
+                                                    <div className="text-xs">
+                                                        <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 border-0 mb-1">
+                                                            <CreditCard className="h-3 w-3 mr-1" /> Stripe
+                                                        </Badge>
+                                                        {company.subscriptionDetails?.cancelAtPeriodEnd ? (
+                                                            <div className="text-orange-500 text-[10px] font-medium flex items-center gap-1">
+                                                                <Clock className="h-3 w-3" /> Cancela em {company.subscriptionDetails.currentPeriodEnd ? new Date(company.subscriptionDetails.currentPeriodEnd).toLocaleDateString() : '?'}
+                                                            </div>
+                                                        ) : (
+                                                            company.subscriptionDetails?.currentPeriodEnd && (
+                                                                <div className="text-green-600 dark:text-green-400 text-[10px] font-medium flex items-center gap-1">
+                                                                    <RefreshCw className="h-3 w-3" /> Renova em {new Date(company.subscriptionDetails.currentPeriodEnd).toLocaleDateString()}
+                                                                </div>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-slate-400">Sem assinatura</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="text-xs space-y-1">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-slate-500">Usuários:</span>
+                                                        <span className="font-medium text-slate-900 dark:text-slate-300">
+                                                            {company.userCount}
+                                                            {company.extraUsers > 0 && <span className="text-green-500 ml-1">+{company.extraUsers}</span>}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-slate-500">Propostas:</span>
+                                                        <span className="font-medium text-slate-900 dark:text-slate-300">
+                                                            {company.proposalCount}
+                                                            {company.extraProposals > 0 && <span className="text-green-500 ml-1">+{company.extraProposals}</span>}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="text-xs text-slate-500">
+                                                    {company.lastLogin ? (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-slate-900 dark:text-slate-200">{new Date(company.lastLogin).toLocaleDateString()}</span>
+                                                            <span className="text-[10px]">{new Date(company.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-slate-400 italic">Nunca</span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(company)} className="h-8 w-8 text-slate-500 hover:text-slate-700" title="Editar">
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => openResetDialog(company)} className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50" title="Resetar Senha">
+                                                        <Key className="h-4 w-4" />
+                                                    </Button>
+
+                                                    {/* Invoices */}
+                                                    {company.stripeCustomerId && (
+                                                        <Button variant="ghost" size="icon" onClick={() => openInvoicesDialog(company)} className="h-8 w-8 text-violet-500 hover:text-violet-600 hover:bg-violet-50" title="Ver Faturas">
+                                                            <Receipt className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+
+                                                    {/* Subscription Actions */}
+                                                    {company.stripeSubscriptionId ? (
+                                                        <>
+                                                            <Button variant="ghost" size="icon" onClick={() => handleCancelSubscription(company.id, company.name)} className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50" title="Cancelar ao Final">
+                                                                <Clock className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="icon" onClick={() => handleCancelSubscriptionImmediately(company.id, company.name)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" title="Cancelar AGORA (Stripe)">
+                                                                <XCircle className="h-4 w-4" />
+                                                            </Button>
+                                                        </>
+                                                    ) : (
+                                                        // If no subscription, show Start Trial if not active
+                                                        (!company.stripeSubscriptionId && company.plan !== 'trial') && (
+                                                            <Button variant="ghost" size="icon" onClick={() => handleStartTrial(company.id)} className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50" title="Iniciar Trial (7 dias)">
+                                                                <Timer className="h-4 w-4" />
+                                                            </Button>
+                                                        )
+                                                    )}
+
+                                                    <Button variant="ghost" size="icon" onClick={() => handleToggleStatus(company.id, company.status)} className={`h-8 w-8 ${company.status === 'active' ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-green-500 hover:text-green-600 hover:bg-green-50'}`} title={company.status === 'active' ? 'Suspender Empresa' : 'Ativar Empresa'}>
+                                                        {company.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </Card>
             </main>
         </div>

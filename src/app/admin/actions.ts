@@ -31,7 +31,11 @@ export async function getCompanies() {
     const companies = await prisma.company.findMany({
         include: {
             users: {
-                select: { id: true } // Just to count
+                select: {
+                    id: true,
+                    lastLogin: true,
+                    role: true
+                }
             },
             _count: {
                 select: {
@@ -43,13 +47,77 @@ export async function getCompanies() {
         orderBy: { createdAt: 'desc' }
     });
 
-    return companies.map(c => ({
-        ...c,
-        createdAt: c.createdAt.toISOString(),
-        userCount: c.users.length,
-        clientCount: c._count.clients,
-        proposalCount: c._count.proposals
+    // Get Stripe details for each company with subscription
+    const { getStripe } = await import('@/lib/stripe');
+    const stripe = getStripe();
+
+    const enrichedCompanies = await Promise.all(companies.map(async (c) => {
+        let subscriptionDetails = null;
+        let totalPaid = 0;
+        let planValue = 0;
+
+        // Get admin's last login
+        const adminUser = c.users.find(u => u.role === 'admin');
+        const lastLogin = adminUser?.lastLogin;
+
+        // Calculate trial days remaining
+        let trialDaysRemaining: number | null = null;
+        if (c.trialEndsAt) {
+            const now = new Date();
+            const trialEnd = new Date(c.trialEndsAt);
+            const diff = trialEnd.getTime() - now.getTime();
+            trialDaysRemaining = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+        }
+
+        // Get Stripe subscription details
+        if (c.stripeSubscriptionId) {
+            try {
+                const sub = await stripe.subscriptions.retrieve(c.stripeSubscriptionId);
+                subscriptionDetails = {
+                    status: sub.status,
+                    cancelAtPeriodEnd: sub.cancel_at_period_end,
+                    currentPeriodEnd: new Date((sub as any).current_period_end * 1000),
+                    interval: (sub as any).items?.data?.[0]?.price?.recurring?.interval || 'month',
+                };
+                // Plan value from subscription
+                planValue = ((sub as any).items?.data?.[0]?.price?.unit_amount || 0) / 100;
+            } catch (e) {
+                // Subscription may not exist anymore
+            }
+        }
+
+        // Get total paid from invoices
+        if (c.stripeCustomerId) {
+            try {
+                const invoices = await stripe.invoices.list({
+                    customer: c.stripeCustomerId,
+                    status: 'paid',
+                    limit: 100,
+                });
+                totalPaid = invoices.data.reduce((sum, inv) => sum + ((inv.amount_paid || 0) / 100), 0);
+            } catch (e) {
+                // Customer may not exist
+            }
+        }
+
+        return {
+            ...c,
+            createdAt: c.createdAt.toISOString(),
+            updatedAt: c.updatedAt.toISOString(),
+            trialEndsAt: c.trialEndsAt?.toISOString() || null,
+            subscriptionEndsAt: c.subscriptionEndsAt?.toISOString() || null,
+            userCount: c.users.length,
+            clientCount: c._count.clients,
+            proposalCount: c._count.proposals,
+            lastLogin: lastLogin?.toISOString() || null,
+            trialDaysRemaining,
+            subscriptionDetails,
+            planValue,
+            totalPaid,
+        };
     }));
+
+    return enrichedCompanies;
 }
 
 export async function createCompany(data: {
@@ -216,6 +284,9 @@ export async function updateCompany(companyId: string, data: {
     responsible?: string;
     plan?: string;
     phone?: string;
+    extraUsers?: number;
+    extraProposals?: number;
+    trialEndsAt?: string | null;
 }) {
     await checkSuperAdmin();
 
@@ -228,6 +299,11 @@ export async function updateCompany(companyId: string, data: {
                 ...(data.responsible && { responsible: data.responsible }),
                 ...(data.plan && { plan: data.plan }),
                 ...(data.phone && { phone: data.phone }),
+                ...(data.extraUsers !== undefined && { extraUsers: data.extraUsers }),
+                ...(data.extraProposals !== undefined && { extraProposals: data.extraProposals }),
+                ...(data.trialEndsAt !== undefined && {
+                    trialEndsAt: data.trialEndsAt ? new Date(data.trialEndsAt) : null
+                }),
             }
         });
 
@@ -420,3 +496,141 @@ export async function adminResetUserPassword(companyId: string, newPassword: str
         return { success: false, error: err.message || "Erro ao resetar senha." };
     }
 }
+
+// Start trial for a company (7 days by default)
+export async function startCompanyTrial(companyId: string, days: number = 7) {
+    await checkSuperAdmin();
+
+    try {
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + days);
+
+        await prisma.company.update({
+            where: { id: companyId },
+            data: {
+                plan: 'trial',
+                trialEndsAt,
+                status: 'active'
+            }
+        });
+
+        revalidatePath('/admin');
+        return { success: true, message: `Trial de ${days} dias iniciado` };
+    } catch (error: any) {
+        return { success: false, error: error.message || 'Erro ao iniciar trial' };
+    }
+}
+
+// Check and expire trials
+export async function checkExpiredTrials() {
+    await checkSuperAdmin();
+
+    try {
+        const now = new Date();
+
+        // Find companies with expired trials
+        const expiredTrials = await prisma.company.findMany({
+            where: {
+                plan: 'trial',
+                trialEndsAt: { lt: now },
+                status: 'active'
+            }
+        });
+
+        // Suspend expired trials
+        for (const company of expiredTrials) {
+            await prisma.company.update({
+                where: { id: company.id },
+                data: { status: 'suspended' }
+            });
+        }
+
+        revalidatePath('/admin');
+        return {
+            success: true,
+            message: `${expiredTrials.length} empresas com trial expirado foram suspensas`
+        };
+    } catch (error: any) {
+        return { success: false, error: error.message || 'Erro ao verificar trials' };
+    }
+}
+
+// Cancel subscription immediately (not at period end)
+export async function cancelSubscriptionImmediately(companyId: string) {
+    await checkSuperAdmin();
+
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { stripeSubscriptionId: true }
+    });
+
+    if (!company?.stripeSubscriptionId) {
+        return { success: false, error: 'Esta empresa não tem assinatura ativa no Stripe' };
+    }
+
+    try {
+        const { getStripe } = await import('@/lib/stripe');
+        const stripe = getStripe();
+
+        // Cancel immediately
+        await stripe.subscriptions.cancel(company.stripeSubscriptionId);
+
+        // Update company status
+        await prisma.company.update({
+            where: { id: companyId },
+            data: {
+                status: 'suspended',
+                stripeSubscriptionId: null
+            }
+        });
+
+        revalidatePath('/admin');
+        return { success: true, message: 'Assinatura cancelada imediatamente' };
+    } catch (error: any) {
+        console.error('Cancel subscription immediately error:', error);
+        return { success: false, error: error.message || 'Erro ao cancelar assinatura' };
+    }
+}
+
+// Get detailed subscription info from Stripe
+export async function getStripeSubscriptionInfo(companyId: string) {
+    await checkSuperAdmin();
+
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { stripeSubscriptionId: true, stripeCustomerId: true }
+    });
+
+    if (!company?.stripeSubscriptionId) {
+        return null;
+    }
+
+    try {
+        const { getStripe } = await import('@/lib/stripe');
+        const stripe = getStripe();
+
+        const sub = await stripe.subscriptions.retrieve(company.stripeSubscriptionId, {
+            expand: ['items.data.price.product']
+        });
+
+        return {
+            id: sub.id,
+            status: sub.status,
+            cancelAtPeriodEnd: sub.cancel_at_period_end,
+            currentPeriodStart: new Date((sub as any).current_period_start * 1000).toISOString(),
+            currentPeriodEnd: new Date((sub as any).current_period_end * 1000).toISOString(),
+            canceledAt: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+            items: (sub as any).items?.data?.map((item: any) => ({
+                priceId: item.price?.id,
+                productName: item.price?.product?.name || 'Plano',
+                amount: (item.price?.unit_amount || 0) / 100,
+                interval: item.price?.recurring?.interval,
+                intervalCount: item.price?.recurring?.interval_count,
+            })) || []
+        };
+    } catch (error) {
+        console.error('Get subscription info error:', error);
+        return null;
+    }
+}
+

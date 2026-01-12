@@ -42,6 +42,11 @@ model Company {
   plan          String    @default("free")
   status        String    @default("active") // active, suspended
   extraUsers    Int       @default(0) // Additional paid seats
+  extraProposals Int      @default(0) // Additional proposals beyond plan limit
+  
+  // Subscription/License control
+  trialEndsAt          DateTime? // When trial expires (null = not on trial)
+  subscriptionEndsAt   DateTime? // When current subscription period ends
   
   stripeCustomerId     String?
   stripeSubscriptionId String?
