@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyPassword, createToken } from '@/lib/auth';
 
+export const runtime = 'nodejs'; // Ensure stable runtime for Prisma/Bcrypt
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
     try {
         const body = await request.json();
@@ -57,6 +60,8 @@ export async function POST(request: Request) {
         }
 
         // Login successful - Update last login
+        // TEMPORARILY DISABLED TO DEBUG PRISMA ACCELERATE 500 ERROR
+        /*
         await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -65,6 +70,7 @@ export async function POST(request: Request) {
                 lockoutUntil: null
             },
         });
+        */
 
         // Create token
         const token = await createToken({
