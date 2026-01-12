@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TemplateSelectorDialog } from "@/components/template-selector-dialog";
 import {
-    Plus, Settings, Package, DollarSign, Users, LogOut, Shield, ClipboardList, Menu, Home
+    Plus, Settings, Package, DollarSign, Users, LogOut, Shield, ClipboardList, Menu, Home, Book
 } from "lucide-react";
 import { useState } from "react";
 
@@ -56,6 +56,7 @@ export function AppHeader({ session, logoutAction }: AppHeaderProps) {
         { href: "/settings", label: "Configurações", icon: Settings, show: true },
         { href: "/billing", label: "Assinatura", icon: DollarSign, show: session?.role === 'admin' },
         { href: "/admin", label: "Super Admin", icon: Shield, show: session?.isSuperAdmin },
+        { href: "/admin/knowledge", label: "Base de Conhecimento (Admin)", icon: Book, show: session?.isSuperAdmin },
         { href: "/audit", label: "Auditoria", icon: ClipboardList, show: session?.role === 'admin' },
     ];
 
