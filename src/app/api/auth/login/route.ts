@@ -101,7 +101,8 @@ export async function POST(request: Request) {
             { status: 200 }
         );
 
-        response.headers.set('Set-Cookie', cookieValue);
+        // response.headers.set('Set-Cookie', cookieValue);
+        console.log('[LOGIN API] Skipping cookie set for debug');
 
         return response;
 
