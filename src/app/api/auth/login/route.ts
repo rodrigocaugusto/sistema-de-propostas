@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyPassword, createToken } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
     try {
@@ -19,6 +18,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Email e senha são obrigatórios' });
         }
 
+        // Find user
         const user = await prisma.user.findUnique({
             where: { email: email.toLowerCase() },
         });
@@ -39,6 +39,7 @@ export async function POST(request: Request) {
             });
         }
 
+        // Verify password
         const isValid = await verifyPassword(password, user.password);
 
         if (!isValid) {
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Credenciais inválidas' });
         }
 
-        // Update last login
+        // Login successful - Update last login
         await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -78,17 +79,24 @@ export async function POST(request: Request) {
 
         console.log(`[LOGIN API] SUCCESS for ${email}`);
 
-        // Set cookie and return response
-        const cookieStore = await cookies();
-        cookieStore.set('auth-token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 7, // 7 days
-            path: '/',
-        });
+        // MANUAL COOKIE SETTING (More robust for Route Handlers)
+        const isProduction = process.env.NODE_ENV === 'production';
+        const cookieName = 'auth-token';
+        const maxAge = 60 * 60 * 24 * 7; // 7 days
 
-        return NextResponse.json({ success: true });
+        let cookieValue = `${cookieName}=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax`;
+        if (isProduction) {
+            cookieValue += '; Secure';
+        }
+
+        const response = NextResponse.json(
+            { success: true },
+            { status: 200 }
+        );
+
+        response.headers.set('Set-Cookie', cookieValue);
+
+        return response;
 
     } catch (error: any) {
         console.error('[LOGIN API] Error:', error);
@@ -96,6 +104,6 @@ export async function POST(request: Request) {
             success: false,
             error: 'Erro ao fazer login.',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+        }, { status: 500 });
     }
 }
