@@ -135,8 +135,8 @@ export default async function SettingsPage() {
                 {/* Tabs Content */}
                 <Card className="bg-white dark:bg-slate-900 shadow-xl border-0">
                     <Tabs defaultValue="company" className="w-full">
-                        <div className="px-6 py-4 overflow-x-auto">
-                            <TabsList className="bg-transparent p-0 h-auto gap-4 flex-nowrap">
+                        <div className="px-6 py-4">
+                            <TabsList className="bg-transparent p-0 h-auto gap-4 flex-wrap justify-start">
                                 <TabsTrigger
                                     value="company"
                                     className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700 data-[state=active]:border-emerald-200 dark:data-[state=active]:bg-emerald-900/30 dark:data-[state=active]:text-emerald-400 dark:data-[state=active]:border-emerald-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
