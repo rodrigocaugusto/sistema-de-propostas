@@ -60,8 +60,8 @@ export async function POST(request: Request) {
         }
 
         // Login successful - Update last login
-        // TEMPORARILY DISABLED TO DEBUG PRISMA ACCELERATE 500 ERROR
-        /*
+        // Login successful - Update last login
+        // Use waitUntil (if available in future Next.js versions for Route Handlers) or just await
         await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -70,7 +70,6 @@ export async function POST(request: Request) {
                 lockoutUntil: null
             },
         });
-        */
 
         // Create token
         const token = await createToken({
@@ -101,8 +100,7 @@ export async function POST(request: Request) {
             { status: 200 }
         );
 
-        // response.headers.set('Set-Cookie', cookieValue);
-        console.log('[LOGIN API] Skipping cookie set for debug');
+        response.headers.set('Set-Cookie', cookieValue);
 
         return response;
 
