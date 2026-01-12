@@ -24,6 +24,7 @@ export interface Company {
     updatedAt?: Date;
     portfolioItems?: PortfolioItem[];
     clientLogos?: ClientLogo[];
+    hasAsaasIntegration?: boolean;
 }
 
 export interface PortfolioItem {
@@ -60,6 +61,7 @@ export interface Proposal {
     introduction?: string | null;
     clientEmail: string;
     clientPhone?: string | null;
+    clientCpfCnpj?: string | null;
     clientId?: string | null;
     status: string;
     template?: string | null;
@@ -112,6 +114,7 @@ export interface Client {
     company?: string;
     email: string;
     phone?: string;
+    cpfCnpj?: string;
     createdAt: string | Date;
     proposalCount?: number;
     totalValue?: number;
@@ -154,6 +157,7 @@ export async function getCompany() {
         createdAt: undefined,
         portfolioItems: (company as any).portfolioItems?.map(({ createdAt, updatedAt, ...i }: any) => i) || [],
         clientLogos: company.clientLogos.map(({ createdAt, updatedAt, ...i }) => i),
+        hasAsaasIntegration: !!company.asaasApiKey,
     };
 }
 
@@ -266,6 +270,7 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
                     name: data.clientName,
                     clientCompany: data.clientCompany || null,
                     phone: data.clientPhone || null,
+                    cpfCnpj: data.clientCpfCnpj || null,
                     email: data.clientEmail,
                 }
             });
@@ -301,6 +306,7 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
                     clientCompany: data.clientCompany || null,
                     email: data.clientEmail,
                     phone: data.clientPhone || null,
+                    cpfCnpj: data.clientCpfCnpj || null,
                 }
             });
         }
@@ -316,6 +322,7 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
             introduction: data.introduction || null,
             clientEmail: data.clientEmail,
             clientPhone: data.clientPhone || null,
+            clientCpfCnpj: data.clientCpfCnpj || null,
             status: 'draft',
             template: data.template || 'classic',
             totalOneTime: data.totalOneTime,
@@ -539,6 +546,7 @@ export async function getClients() {
         company: c.clientCompany, // Mapped correctly now
         email: c.email,
         phone: c.phone,
+        cpfCnpj: c.cpfCnpj,
         createdAt: c.createdAt.toISOString(),
         proposalCount: c.proposals.length,
         totalValue: c.proposals.reduce((sum, p) => sum + p.totalOneTime + (p.totalRecurring * 12), 0),
@@ -546,7 +554,7 @@ export async function getClients() {
     }));
 }
 
-export async function createClient(data: { name: string; email: string; phone?: string | null; company?: string | null }) {
+export async function createClient(data: { name: string; email: string; phone?: string | null; company?: string | null; cpfCnpj?: string | null }) {
     const session = await getSession();
     if (!session || !session.companyId) throw new Error("Unauthorized");
 
@@ -565,12 +573,13 @@ export async function createClient(data: { name: string; email: string; phone?: 
             name: data.name,
             email: data.email,
             phone: data.phone ?? null,
+            cpfCnpj: data.cpfCnpj ?? null,
             clientCompany: data.company ?? null // Mapping to new schema field
         }
     });
 }
 
-export async function updateClient(id: string, data: { name?: string; email?: string; phone?: string | null; company?: string | null }) {
+export async function updateClient(id: string, data: { name?: string; email?: string; phone?: string | null; company?: string | null; cpfCnpj?: string | null }) {
     const session = await getSession();
     if (!session || !session.companyId) throw new Error("Unauthorized");
 
@@ -585,6 +594,7 @@ export async function updateClient(id: string, data: { name?: string; email?: st
             ...(data.name && { name: data.name }),
             ...(data.email && { email: data.email }),
             ...(data.phone !== undefined && { phone: data.phone }),
+            ...(data.cpfCnpj !== undefined && { cpfCnpj: data.cpfCnpj }),
             ...(data.company !== undefined && { clientCompany: data.company }),
         }
     });
@@ -623,6 +633,7 @@ export interface ProposalUpdateData {
     introduction?: string | null;
     clientEmail?: string;
     clientPhone?: string;
+    clientCpfCnpj?: string;
     paymentMethods?: string[];
     paymentLink?: string | null;
     paymentTerms?: string[];
@@ -667,6 +678,7 @@ export async function updateProposal(id: string, data: ProposalUpdateData) {
             ...(data.introduction !== undefined && { introduction: data.introduction }),
             ...(data.clientEmail && { clientEmail: data.clientEmail }),
             ...(data.clientPhone && { clientPhone: data.clientPhone }),
+            ...(data.clientCpfCnpj && { clientCpfCnpj: data.clientCpfCnpj }),
             ...(data.paymentMethods && { paymentMethods: data.paymentMethods }),
             ...(data.paymentLink !== undefined && { paymentLink: data.paymentLink }),
             ...(data.paymentTerms && { paymentTerms: data.paymentTerms }),

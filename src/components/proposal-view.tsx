@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from 'sonner';
 import { PortfolioSection, ClientLogosSection } from '@/components/proposal-preview-templates';
+import { useRouter } from 'next/navigation';
 
 interface ProposalViewProps {
     proposal: Proposal;
@@ -28,6 +29,7 @@ interface ProposalViewProps {
 
 export function ProposalView({ proposal, company, products = [] }: ProposalViewProps) {
     const [status, setStatus] = useState(proposal.status);
+    const router = useRouter();
 
     const getOriginalPrice = (itemName: string, type: 'one-time' | 'recurring') => {
         if (!products) return null;
@@ -72,6 +74,7 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
         try {
             await acceptProposal(proposal.id);
             setStatus('accepted');
+            router.refresh(); // Atualiza para pegar dados de pagamento gerados no servidor
 
             // Fire confetti
             const duration = 5 * 1000;
@@ -628,7 +631,25 @@ export function ProposalView({ proposal, company, products = [] }: ProposalViewP
                                         <Check className="w-12 h-12" />
                                     </div>
                                     <h3 className="text-2xl font-bold">Proposta Aceita!</h3>
-                                    <p className="opacity-80">Obrigado pela confiança. Entraremos em contato em breve.</p>
+                                    <p className="opacity-80 mb-6">Obrigado pela confiança. Entraremos em contato em breve.</p>
+
+                                    {((proposal as any).asaasInvoiceUrl) && (
+                                        <div className="bg-white/10 p-6 rounded-xl border border-white/20 max-w-md mx-auto animate-in slide-in-from-bottom-4 duration-700 delay-300">
+                                            <h4 className="font-semibold mb-2 flex items-center justify-center gap-2">
+                                                <CreditCard className="w-5 h-5" />
+                                                Pagamento Gerado
+                                            </h4>
+                                            <p className="text-sm opacity-80 mb-4">
+                                                Para agilizar o inicio do projeto, efetue o pagamento da primeira parcela/sinal.
+                                            </p>
+                                            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white w-full font-bold shadow-lg shadow-emerald-500/20" size="lg" asChild>
+                                                <a href={(proposal as any).asaasInvoiceUrl} target="_blank" rel="noopener noreferrer">
+                                                    Pagar Agora
+                                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                                </a>
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {status === 'rejected' && (

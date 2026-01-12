@@ -114,6 +114,19 @@ export async function saveCompany(data: Company) {
     return result;
 }
 
+export async function updateCompanyAsaasKey(apiKey: string) {
+    const session = await getSession();
+    if (session?.role !== 'admin' || !session.companyId) throw new Error("Acesso negado");
+
+    await prisma.company.update({
+        where: { id: session.companyId },
+        data: { asaasApiKey: apiKey }
+    });
+
+    revalidatePath('/settings');
+    return { success: true };
+}
+
 export async function fetchProposals() {
     return await getProposals();
 }
@@ -173,6 +186,69 @@ export async function markProposalAsViewed(id: string) {
 
 export async function acceptProposal(id: string) {
     const result = await updateProposalStatus(id, 'accepted');
+
+    // Asaas Integration: Helper Function to handle async without blocking if needed, but here we await to save invoice URL
+    try {
+        const fullProposal = await getProposal(id);
+        const { prisma } = await import('@/lib/db');
+
+        if (fullProposal) {
+            const company = await prisma.company.findUnique({
+                where: { id: (fullProposal as any).companyId }
+            });
+
+            if (company?.asaasApiKey) {
+                console.log("Iniciando integração Asaas para proposta", id);
+                const { createOrUpdateAsaasCustomer, createAsaasPayment } = await import('@/lib/asaas');
+
+                // 1. Create/Update Customer
+                const customerId = await createOrUpdateAsaasCustomer(company.asaasApiKey, {
+                    name: fullProposal.clientName,
+                    email: fullProposal.clientEmail,
+                    phone: fullProposal.clientPhone || undefined,
+                    cpfCnpj: (fullProposal as any).clientCpfCnpj || undefined, // Type cast provisório se necessário
+                    mobilePhone: fullProposal.clientPhone || undefined,
+                    externalReference: fullProposal.clientId || undefined
+                });
+
+                // Update Client record if exists
+                if (fullProposal.clientId) {
+                    await prisma.client.update({
+                        where: { id: fullProposal.clientId },
+                        data: { asaasCustomerId: customerId }
+                    }).catch(console.error);
+                }
+
+                // 2. Create Payment (One Time Value)
+                if (fullProposal.totalOneTime > 0) {
+                    const dueDate = new Date();
+                    dueDate.setDate(dueDate.getDate() + 2); // Vencimento em 2 dias
+
+                    const payment = await createAsaasPayment(company.asaasApiKey, {
+                        customer: customerId,
+                        billingType: "UNDEFINED", // Cliente escolhe no checkout do Asaas
+                        value: fullProposal.totalOneTime,
+                        dueDate: dueDate.toISOString().split('T')[0],
+                        description: `Proposta Aprovada #${fullProposal.proposalNumber || id.slice(0, 6)}`,
+                        externalReference: fullProposal.id
+                    });
+
+                    await prisma.proposal.update({
+                        where: { id: fullProposal.id },
+                        data: {
+                            asaasPaymentId: payment.id,
+                            asaasInvoiceUrl: payment.invoiceUrl,
+                            asaasPaymentStatus: payment.status
+                        }
+                    });
+                    console.log("Cobrança Asaas gerada:", payment.id);
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Erro na integração Asaas:", error);
+        // Silently fail integration issues to not check rollback acceptance
+    }
 
     // Send acceptance confirmation email to the company
     try {
@@ -297,13 +373,13 @@ export async function fetchClientById(id: string) {
     return await getClient(id);
 }
 
-export async function saveClient(data: { name: string; email: string; phone?: string | null; company?: string | null }) {
+export async function saveClient(data: { name: string; email: string; phone?: string | null; company?: string | null; cpfCnpj?: string | null }) {
     const result = await createClient(data);
     revalidatePath('/clients');
     return result;
 }
 
-export async function editClient(id: string, data: { name?: string; email?: string; phone?: string | null; company?: string | null }) {
+export async function editClient(id: string, data: { name?: string; email?: string; phone?: string | null; company?: string | null; cpfCnpj?: string | null }) {
     const result = await updateClient(id, data);
     revalidatePath('/clients');
     revalidatePath(`/clients/${id}`);

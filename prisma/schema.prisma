@@ -38,6 +38,7 @@ model Company {
   logoUrl       String?
   website       String?
   webhookUrl    String?
+  asaasApiKey   String?
   
   plan          String    @default("free")
   status        String    @default("active") // active, suspended
@@ -74,7 +75,9 @@ model Client {
                      // Wait, the previous field was `company String?`. `company` is now the relation. I MUST rename the string field `company` to `clientCompany` or similar to avoid conflict with the relation `company`.
   clientCompany   String?
   email     String
+  asaasCustomerId String?
   phone     String?
+  cpfCnpj   String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   proposals Proposal[]
@@ -94,6 +97,7 @@ model Proposal {
   introduction        String?
   clientEmail         String
   clientPhone         String?
+  clientCpfCnpj       String?
   status              String        @default("draft")
   template            String        @default("classic") // classic, modern, minimal
   createdAt           DateTime      @default(now())
@@ -104,6 +108,9 @@ model Proposal {
   recurringPeriod     Int?
   paymentMethods      Json?
   paymentLink         String?
+  asaasPaymentId      String?
+  asaasInvoiceUrl     String?
+  asaasPaymentStatus  String?
   paymentTerms        Json?
   validityDays        Int           @default(15)
   notes               Json?

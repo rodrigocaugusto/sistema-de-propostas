@@ -58,6 +58,7 @@ interface ClientType {
     email: string;
     company?: string | null;
     phone?: string | null;
+    cpfCnpj?: string | null;
 }
 
 const MODERN_THEMES = [
@@ -102,6 +103,7 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
     const [clientCompany, setClientCompany] = useState('');
     const [clientEmail, setClientEmail] = useState('');
     const [clientPhone, setClientPhone] = useState('');
+    const [clientCpfCnpj, setClientCpfCnpj] = useState('');
     const [selectedClientId, setSelectedClientId] = useState('');
 
     const [items, setItems] = useState<Item[]>([]);
@@ -232,6 +234,7 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
             setClientEmail(client.email);
             setClientCompany(client.company || '');
             setClientPhone(client.phone || '');
+            setClientCpfCnpj(client.cpfCnpj || '');
             toast.success(`Cliente "${client.name}" selecionado`);
         }
     };
@@ -242,6 +245,7 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
         setClientEmail('');
         setClientCompany('');
         setClientPhone('');
+        setClientCpfCnpj('');
     };
 
 
@@ -377,6 +381,7 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
                 clientCompany: clientCompany || undefined,
                 clientEmail,
                 clientPhone: clientPhone || undefined,
+                clientCpfCnpj: clientCpfCnpj || undefined, // Send to backend
                 items,
                 recurringItems,
                 introduction: showIntroduction ? (introduction || null) : null,
