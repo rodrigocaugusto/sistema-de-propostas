@@ -219,17 +219,45 @@ export async function acceptProposal(id: string) {
                     }).catch(console.error);
                 }
 
+                // Preparar descrição detalhada dos itens
+                const items = (fullProposal as any).items || [];
+                const oneTimeItems = items.filter((i: any) => i.type === 'one-time');
+                const recurringItems = items.filter((i: any) => i.type === 'recurring');
+
+                // Função para gerar descrição dos itens
+                const buildItemsDescription = (itemsList: any[], maxChars: number = 400) => {
+                    if (itemsList.length === 0) return '';
+
+                    let desc = itemsList.map((item: any) => {
+                        const qty = item.quantity > 1 ? `${item.quantity}x ` : '';
+                        return `${qty}${item.name}`;
+                    }).join('; ');
+
+                    if (desc.length > maxChars) {
+                        desc = desc.substring(0, maxChars - 3) + '...';
+                    }
+                    return desc;
+                };
+
+                // Descrição base com dados do cliente
+                const clientInfo = fullProposal.clientCompany
+                    ? `${fullProposal.clientName} (${fullProposal.clientCompany})`
+                    : fullProposal.clientName;
+
                 // 2. Create Payment (One Time Value)
                 if (fullProposal.totalOneTime > 0) {
                     const dueDate = new Date();
                     dueDate.setDate(dueDate.getDate() + 2); // Vencimento em 2 dias
+
+                    const itemsDesc = buildItemsDescription(oneTimeItems);
+                    const description = `Proposta #${fullProposal.proposalNumber || id.slice(0, 6)} | Cliente: ${clientInfo}${itemsDesc ? ` | Itens: ${itemsDesc}` : ''}`;
 
                     const payment = await createAsaasPayment(company.asaasApiKey, {
                         customer: customerId,
                         billingType: "UNDEFINED", // Cliente escolhe no checkout do Asaas
                         value: fullProposal.totalOneTime,
                         dueDate: dueDate.toISOString().split('T')[0],
-                        description: `Proposta Aprovada #${fullProposal.proposalNumber || id.slice(0, 6)} - Taxa Única`,
+                        description: description.slice(0, 500), // Asaas limita a 500 chars
                         externalReference: fullProposal.id
                     });
 
@@ -270,6 +298,10 @@ export async function acceptProposal(id: string) {
                         }
                     }
 
+                    const itemsDesc = buildItemsDescription(recurringItems);
+                    const cycleLabel = cycle === "MONTHLY" ? "Mensal" : "Anual";
+                    const description = `Proposta #${fullProposal.proposalNumber || id.slice(0, 6)} | ${cycleLabel} | Cliente: ${clientInfo}${itemsDesc ? ` | Serviços: ${itemsDesc}` : ''}`;
+
                     try {
                         const subscription = await createAsaasSubscription(company.asaasApiKey, {
                             customer: customerId,
@@ -277,7 +309,7 @@ export async function acceptProposal(id: string) {
                             value: fullProposal.totalRecurring,
                             nextDueDate: nextDueDate.toISOString().split('T')[0],
                             cycle,
-                            description: `Proposta Aprovada #${fullProposal.proposalNumber || id.slice(0, 6)} - Recorrência`,
+                            description: description.slice(0, 500), // Asaas limita a 500 chars
                             externalReference: fullProposal.id,
                             maxPayments
                         });
