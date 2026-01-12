@@ -11,6 +11,7 @@ export async function POST(request: Request) {
 
         // Honeypot check
         if (honeypot) {
+            console.warn(`[LOGIN API] BLOCKED BY HONEYPOT: Field was filled with '${honeypot}'`);
             return NextResponse.json({ success: false, error: 'Credenciais inválidas' });
         }
 

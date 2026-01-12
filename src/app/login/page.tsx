@@ -115,11 +115,11 @@ export default function LoginPage() {
 
                         {/* Honeypot Field (Invisible to users, visible to bots) */}
                         <div className="opacity-0 absolute -z-10 h-0 w-0 overflow-hidden" aria-hidden="true">
-                            <label htmlFor="_fax">Fax Number</label>
+                            <label htmlFor="auth_check_hp">Website</label>
                             <input
                                 type="text"
-                                id="_fax"
-                                name="_fax"
+                                id="auth_check_hp"
+                                name="auth_check_hp"
                                 tabIndex={-1}
                                 autoComplete="off"
                                 value={honeypot}
