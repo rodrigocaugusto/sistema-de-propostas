@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    ChevronLeft, LogOut, Menu, Home, Settings, Package, Users, DollarSign, ClipboardList, Shield
+    ChevronLeft, LogOut, Menu, Home, Settings, Package, Users, DollarSign, ClipboardList, Shield, BarChart3
 } from "lucide-react";
 import { useState } from "react";
 
@@ -19,6 +19,7 @@ const iconMap = {
     dollarSign: DollarSign,
     clipboardList: ClipboardList,
     shield: Shield,
+    'bar-chart': BarChart3,
 } as const;
 
 type IconName = keyof typeof iconMap;
@@ -77,6 +78,7 @@ export function PageHeader({
         { href: "/dashboard", label: "Dashboard", icon: Home, show: true },
         { href: "/clients", label: "Clientes", icon: Users, show: true },
         { href: "/products", label: "Produtos", icon: Package, show: true },
+        { href: "/reports", label: "Relatórios", icon: BarChart3, show: session?.role === 'admin' },
         { href: "/settings", label: "Configurações", icon: Settings, show: true },
         { href: "/billing", label: "Assinatura", icon: DollarSign, show: session?.role === 'admin' },
         { href: "/admin", label: "Super Admin", icon: Shield, show: session?.isSuperAdmin },
