@@ -54,11 +54,11 @@ export async function createArticle(data: {
     content: string;
     videoUrl?: string;
     category?: string;
-}) {
+}): Promise<{ success: boolean; error?: string; article?: KnowledgeArticle }> {
     try {
         await checkSuperAdmin();
 
-        await prisma.knowledgeArticle.create({
+        const article = await prisma.knowledgeArticle.create({
             data: {
                 title: data.title,
                 content: data.content,
@@ -69,7 +69,8 @@ export async function createArticle(data: {
         });
 
         revalidatePath('/admin/knowledge');
-        return { success: true };
+        revalidatePath('/'); // Revalidate sidebar too
+        return { success: true, article };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
@@ -81,11 +82,11 @@ export async function updateArticle(id: string, data: {
     videoUrl?: string;
     category?: string;
     isVisible?: boolean;
-}) {
+}): Promise<{ success: boolean; error?: string; article?: KnowledgeArticle }> {
     try {
         await checkSuperAdmin();
 
-        await prisma.knowledgeArticle.update({
+        const article = await prisma.knowledgeArticle.update({
             where: { id },
             data: {
                 ...data,
@@ -95,7 +96,8 @@ export async function updateArticle(id: string, data: {
         });
 
         revalidatePath('/admin/knowledge');
-        return { success: true };
+        revalidatePath('/'); // Revalidate sidebar too
+        return { success: true, article };
     } catch (error: any) {
         return { success: false, error: error.message };
     }

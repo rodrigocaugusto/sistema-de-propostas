@@ -40,6 +40,7 @@ export default function RootLayout({
         >
           {children}
           <SupportFloatButton />
+          <KnowledgeBaseSidebar />
           <Toaster />
         </ThemeProvider>
       </body>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Save, X, Video, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,6 @@ interface ArticleManagerProps {
 }
 
 export function ArticleManager({ initialArticles }: ArticleManagerProps) {
-    const router = useRouter();
     const [articles, setArticles] = useState(initialArticles);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -85,12 +83,14 @@ export function ArticleManager({ initialArticles }: ArticleManagerProps) {
                     videoUrl,
                     isVisible,
                 });
-                if (result.success) {
+                if (result.success && result.article) {
+                    // Update local state immediately
+                    setArticles(prev => prev.map(a => a.id === currentId ? result.article! : a));
                     toast.success('Artigo atualizado com sucesso!');
                     setIsDialogOpen(false);
-                    router.refresh();
+                    resetForm();
                 } else {
-                    toast.error(result.error);
+                    toast.error(result.error || 'Erro ao atualizar');
                 }
             } else {
                 const result = await createArticle({
@@ -99,12 +99,14 @@ export function ArticleManager({ initialArticles }: ArticleManagerProps) {
                     category,
                     videoUrl,
                 });
-                if (result.success) {
+                if (result.success && result.article) {
+                    // Add to local state immediately
+                    setArticles(prev => [result.article!, ...prev]);
                     toast.success('Artigo criado com sucesso!');
                     setIsDialogOpen(false);
-                    router.refresh();
+                    resetForm();
                 } else {
-                    toast.error(result.error);
+                    toast.error(result.error || 'Erro ao criar');
                 }
             }
         } catch {
@@ -119,10 +121,11 @@ export function ArticleManager({ initialArticles }: ArticleManagerProps) {
 
         const result = await deleteArticle(id);
         if (result.success) {
+            // Remove from local state immediately
+            setArticles(prev => prev.filter(a => a.id !== id));
             toast.success('Artigo excluído');
-            router.refresh();
         } else {
-            toast.error(result.error);
+            toast.error(result.error || 'Erro ao excluir');
         }
     };
 
