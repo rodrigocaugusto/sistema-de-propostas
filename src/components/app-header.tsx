@@ -97,12 +97,20 @@ export function AppHeader({ session, logoutAction }: AppHeaderProps) {
 
                         {/* Super Admin */}
                         {session?.isSuperAdmin && (
-                            <Link href="/admin">
-                                <Button variant="ghost" size="sm" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/20">
-                                    <Shield className="mr-2 h-4 w-4" />
-                                    Super Admin
-                                </Button>
-                            </Link>
+                            <>
+                                <Link href="/admin">
+                                    <Button variant="ghost" size="sm" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/20">
+                                        <Shield className="mr-2 h-4 w-4" />
+                                        Admin
+                                    </Button>
+                                </Link>
+                                <Link href="/admin/knowledge">
+                                    <Button variant="ghost" size="sm" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
+                                        <Book className="mr-2 h-4 w-4" />
+                                        Wiki
+                                    </Button>
+                                </Link>
+                            </>
                         )}
 
                         {/* Billing - Icon only */}
