@@ -80,12 +80,24 @@ export interface Proposal {
     clientLogosGrayscale?: boolean;
     portfolioItems?: PortfolioItem[];
     customColors?: {
+        // Classic template colors
         headerBg?: string;
         introductionBg?: string;
         oneTimeBg?: string;
         recurringBg?: string;
         totalBg?: string;
         notesBg?: string;
+        // Modern template colors
+        gradientStart?: string;
+        gradientMiddle?: string;
+        gradientEnd?: string;
+        cardBg?: string;
+        accentColor?: string;
+        // Minimal template colors
+        backgroundColor?: string;
+        productBlockBg?: string;
+        textColor?: string;
+        showCheckmarks?: boolean;
     } | null;
     createdBy?: {
         name: string;

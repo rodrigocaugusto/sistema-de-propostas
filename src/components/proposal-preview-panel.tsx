@@ -5,6 +5,7 @@ import { Company, PortfolioItem } from '@/lib/db';
 import {
     ProposalTemplateId,
     PROPOSAL_TEMPLATES,
+    DEFAULT_CLASSIC_COLORS,
     DEFAULT_MODERN_COLORS,
     DEFAULT_MINIMAL_COLORS
 } from '@/lib/proposal-templates';
@@ -20,13 +21,26 @@ interface Item {
     showDiscount?: boolean;
 }
 
-interface ClassicCustomColors {
-    headerBg: string;
-    introductionBg: string;
-    oneTimeBg: string;
-    recurringBg: string;
-    totalBg: string;
-    notesBg: string;
+// Combined colors interface that can hold colors for any template
+interface CustomColorsProps {
+    // Classic template colors
+    headerBg?: string;
+    introductionBg?: string;
+    oneTimeBg?: string;
+    recurringBg?: string;
+    totalBg?: string;
+    notesBg?: string;
+    // Modern template colors
+    gradientStart?: string;
+    gradientMiddle?: string;
+    gradientEnd?: string;
+    cardBg?: string;
+    accentColor?: string;
+    // Minimal template colors
+    backgroundColor?: string;
+    productBlockBg?: string;
+    textColor?: string;
+    showCheckmarks?: boolean;
 }
 
 interface ProposalPreviewPanelProps {
@@ -46,7 +60,7 @@ interface ProposalPreviewPanelProps {
     recurringPeriod: number;
     recurringPeriodType: 'months' | 'years' | 'indeterminate';
     introduction?: string;
-    customColors: ClassicCustomColors;
+    customColors: CustomColorsProps;
     includePortfolio?: boolean;
     includeClientLogos?: boolean;
     clientLogosGrayscale?: boolean;
@@ -115,7 +129,7 @@ export function ProposalPreviewPanel({
                             recurringPeriod={recurringPeriod}
                             recurringPeriodType={recurringPeriodType}
                             introduction={introduction}
-                            customColors={customColors}
+                            customColors={{ ...DEFAULT_CLASSIC_COLORS, ...customColors }}
                             includePortfolio={includePortfolio}
                             includeClientLogos={includeClientLogos}
                             clientLogosGrayscale={clientLogosGrayscale}
@@ -140,7 +154,7 @@ export function ProposalPreviewPanel({
                             recurringPeriod={recurringPeriod}
                             recurringPeriodType={recurringPeriodType}
                             introduction={introduction}
-                            customColors={DEFAULT_MODERN_COLORS}
+                            customColors={{ ...DEFAULT_MODERN_COLORS, ...customColors }}
                             includePortfolio={includePortfolio}
                             includeClientLogos={includeClientLogos}
                             clientLogosGrayscale={clientLogosGrayscale}
@@ -165,7 +179,7 @@ export function ProposalPreviewPanel({
                             recurringPeriod={recurringPeriod}
                             recurringPeriodType={recurringPeriodType}
                             introduction={introduction}
-                            customColors={DEFAULT_MINIMAL_COLORS}
+                            customColors={{ ...DEFAULT_MINIMAL_COLORS, ...customColors }}
                             includePortfolio={includePortfolio}
                             includeClientLogos={includeClientLogos}
                             clientLogosGrayscale={clientLogosGrayscale}

@@ -23,8 +23,27 @@ interface ProposalViewModernProps {
     products?: Product[];
 }
 
+// Default modern colors if not provided
+const DEFAULT_MODERN_COLORS = {
+    gradientStart: '#8b5cf6',
+    gradientMiddle: '#a855f7',
+    gradientEnd: '#ec4899',
+    accentColor: '#fbbf24',
+};
+
 export function ProposalViewModern({ proposal, company, products = [] }: ProposalViewModernProps) {
     const [status, setStatus] = useState(proposal.status);
+
+    // Extract custom colors from proposal (stored as JSON)
+    const customColors = {
+        ...DEFAULT_MODERN_COLORS,
+        ...(typeof proposal.customColors === 'object' ? proposal.customColors : {})
+    };
+
+    // Build gradient style from custom colors
+    const gradientStyle = {
+        background: `linear-gradient(135deg, ${customColors.gradientStart}, ${customColors.gradientMiddle}, ${customColors.gradientEnd})`
+    };
 
     const getDiscountInfo = (item: any, type: 'one-time' | 'recurring') => {
         let originalPrice = item.originalPrice;
@@ -155,8 +174,8 @@ export function ProposalViewModern({ proposal, company, products = [] }: Proposa
 
     return (
         <div className="min-h-screen pb-20 print:bg-white print:pb-0">
-            {/* Animated gradient background */}
-            <div className="fixed inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-pink-500 -z-10" />
+            {/* Animated gradient background - uses custom colors */}
+            <div className="fixed inset-0 -z-10" style={gradientStyle} />
             <div className="fixed inset-0 -z-10">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-400/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-400/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }} />
@@ -348,7 +367,7 @@ export function ProposalViewModern({ proposal, company, products = [] }: Proposa
                 {proposal.items && proposal.items.length > 0 && (
                     <motion.section variants={itemAnim} className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="h-10 w-1 rounded-full bg-gradient-to-b from-amber-400 to-orange-500"></div>
+                            <div className="h-10 w-1 rounded-full" style={{ background: `linear-gradient(to bottom, ${customColors.accentColor}, ${customColors.gradientEnd})` }}></div>
                             <h2 className="text-2xl font-bold text-white">Investimento Único</h2>
                         </div>
 
@@ -381,7 +400,7 @@ export function ProposalViewModern({ proposal, company, products = [] }: Proposa
                                                     <span className="text-xs text-white/40 line-through">
                                                         R$ {originalPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                     </span>
-                                                    <div className="font-bold text-xl text-amber-400">
+                                                    <div className="font-bold text-xl" style={{ color: customColors.accentColor }}>
                                                         R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                     </div>
                                                 </div>
@@ -395,9 +414,9 @@ export function ProposalViewModern({ proposal, company, products = [] }: Proposa
                         </div>
 
                         <div className="flex justify-end">
-                            <div className="text-right p-4 bg-gradient-to-r from-amber-400/20 to-orange-500/20 backdrop-blur-xl rounded-xl border border-amber-400/30">
+                            <div className="text-right p-4 backdrop-blur-xl rounded-xl border" style={{ background: `linear-gradient(135deg, ${customColors.accentColor}20, ${customColors.accentColor}10)`, borderColor: `${customColors.accentColor}30` }}>
                                 <p className="text-sm text-white/60">Total Setup / Único</p>
-                                <p className="text-2xl font-bold text-amber-400">R$ {proposal.totalOneTime.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                <p className="text-2xl font-bold" style={{ color: customColors.accentColor }}>R$ {proposal.totalOneTime.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                             </div>
                         </div>
                     </motion.section>

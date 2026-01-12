@@ -15,9 +15,11 @@ import { sendAdminNotification } from '@/lib/email';
 
 export async function login(email: string, password: string, honeypot?: string): Promise<{ success: boolean; error?: string }> {
     try {
+        console.log(`[LOGIN] Attempt for: ${email}`);
+
         // 1. Honeypot check: If the hidden field is filled, it's a bot
         if (honeypot) {
-            console.log(`Bot attempt blocked for email: ${email}`);
+            console.log(`[LOGIN] Bot attempt blocked for email: ${email}`);
             return { success: false, error: 'Credenciais inválidas' };
         }
 
@@ -26,15 +28,20 @@ export async function login(email: string, password: string, honeypot?: string):
         });
 
         if (!user) {
+            console.log(`[LOGIN] User not found: ${email}`);
             return { success: false, error: 'Credenciais inválidas' };
         }
 
+        console.log(`[LOGIN] User found: ${user.email}, isActive: ${user.isActive}, companyId: ${user.companyId}`);
+
         if (!user.isActive) {
+            console.log(`[LOGIN] User inactive: ${email}`);
             return { success: false, error: 'Usuário desativado. Entre em contato com o administrador.' };
         }
 
         // 2. Bruteforce protection check
         if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+            console.log(`[LOGIN] User locked until: ${user.lockoutUntil}`);
             return {
                 success: false,
                 error: 'Muitas tentativas falhas. Conta bloqueada temporariamente. Tente novamente em 15 minutos.'
@@ -42,6 +49,7 @@ export async function login(email: string, password: string, honeypot?: string):
         }
 
         const isValid = await verifyPassword(password, user.password);
+        console.log(`[LOGIN] Password verification: ${isValid ? 'VALID' : 'INVALID'}`);
 
         if (!isValid) {
             // Increment failed attempts
@@ -61,6 +69,7 @@ export async function login(email: string, password: string, honeypot?: string):
                 }
             });
 
+            console.log(`[LOGIN] Failed attempts: ${attempts}`);
             return { success: false, error: 'Credenciais inválidas' };
         }
 
@@ -85,11 +94,13 @@ export async function login(email: string, password: string, honeypot?: string):
             avatarUrl: (user as any).avatarUrl,
         });
 
+        console.log(`[LOGIN] Token created, setting session...`);
         await setSession(token);
 
+        console.log(`[LOGIN] SUCCESS for ${email}`);
         return { success: true };
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('[LOGIN] Error:', error);
         return { success: false, error: 'Erro ao fazer login. Tente novamente.' };
     }
 }
