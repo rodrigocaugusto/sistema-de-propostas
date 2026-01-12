@@ -268,32 +268,90 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        {/* Recurso 3 - Webhooks */}
+                        {/* Recurso 3 - Integrações */}
                         <div className="grid lg:grid-cols-2 gap-12 items-center">
                             <div>
                                 <div className="inline-flex items-center gap-2 text-blue-600 font-semibold mb-4">
                                     <Link2 className="h-5 w-5" /> RECURSO 3
                                 </div>
                                 <h3 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-4">Conecte com tudo. Automatize tudo.</h3>
-                                <p className="text-slate-600 dark:text-slate-400 mb-6">Webhooks poderosos que disparam ações em qualquer ferramenta quando a proposta é aceita.</p>
-                                <div className="grid grid-cols-2 gap-3 mb-6">
-                                    {["n8n", "Make", "Zapier", "Qualquer API"].map((tool, i) => (
-                                        <div key={i} className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-center text-sm font-medium">{tool}</div>
-                                    ))}
+                                <p className="text-slate-600 dark:text-slate-400 mb-8">
+                                    Não seja apenas mais um formatador de propostas. Transforme seu processo comercial em uma máquina autônoma.
+                                </p>
+
+                                {/* Asaas Highlight */}
+                                <div className="mb-8 p-6 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="h-8 flex items-center">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src="https://logodownload.org/wp-content/uploads/2021/04/asaas-logo.png" className="h-5 w-auto object-contain" alt="Asaas" />
+                                        </div>
+                                        <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Integração Nativa</span>
+                                    </div>
+                                    <p className="text-sm text-slate-700 dark:text-slate-300">
+                                        <strong>Faturamento no &quot;Aceite&quot;:</strong> Quando seu cliente clica em aceitar, nosso sistema cria automaticamente o cadastro dele e gera a cobrança (Boleto/Pix) direto no seu Asaas. Zero trabalho manual.
+                                    </p>
                                 </div>
-                                <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                                    <p>🎯 Atualiza CRM automaticamente</p>
-                                    <p>💬 Envia mensagem no Slack</p>
-                                    <p>✅ Cria projeto no Asana/Trello</p>
-                                    <p>📧 Dispara e-mail de boas-vindas</p>
-                                    <p>💰 Atualiza sistema financeiro</p>
+
+                                <div className="space-y-4">
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                        Conecte também via Webhook:
+                                    </p>
+                                    <div className="flex flex-wrap gap-6 items-center opacity-70 hover:opacity-100 transition-opacity">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/N8n-logo-new.svg" className="h-6 w-auto" alt="n8n" />
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src="https://cdn.worldvectorlogo.com/logos/zapier.svg" className="h-6 w-auto" alt="Zapier" />
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src="https://assets-global.website-files.com/620d42e86cb69f1610e7dc27/6227658c704048450f3ddbe2_make-logo-black.svg" className="h-5 w-auto dark:invert" alt="Make" />
+                                    </div>
+                                    <p className="text-sm text-slate-500">
+                                        Atualize seu CRM, notifique no Slack, dispare e-mails... o céu é o limite.
+                                    </p>
                                 </div>
                             </div>
-                            <div className="bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-3xl p-8 aspect-video flex items-center justify-center">
-                                <div className="text-center">
-                                    <Link2 className="h-16 w-16 text-blue-500 mx-auto mb-4" />
-                                    <p className="text-4xl font-bold text-blue-600">5.000+</p>
-                                    <p className="text-slate-600 dark:text-slate-400">apps compatíveis</p>
+
+                            {/* Visual Logic */}
+                            <div className="bg-slate-50 dark:bg-slate-800 rounded-3xl p-8 aspect-video flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/10 to-transparent"></div>
+
+                                <div className="relative z-10 flex flex-col gap-4 w-full max-w-sm">
+                                    {/* Flow */}
+                                    <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700">
+                                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                            <Check className="h-6 w-6 text-green-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Gatilho</p>
+                                            <p className="font-bold text-slate-900 dark:text-white">Proposta Aceita</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="h-6 w-0.5 bg-slate-300 dark:bg-slate-600 mx-auto -my-2 relative z-0"></div>
+
+                                    <div className="grid grid-cols-1 gap-3 relative z-10">
+                                        <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
+                                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shrink-0">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src="https://logodownload.org/wp-content/uploads/2021/04/asaas-logo.png" className="h-3 w-auto" alt="Asaas" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Automação Nativa</p>
+                                                <p className="text-xs text-slate-600 dark:text-slate-400 truncate">Gerar cliente e boleto no Asaas</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 bg-pink-50 dark:bg-pink-900/20 p-3 rounded-lg border border-pink-100 dark:border-pink-800">
+                                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shrink-0">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/N8n-logo-new.svg" className="h-4 w-auto" alt="n8n" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold text-pink-700 dark:text-pink-300">Webhook</p>
+                                                <p className="text-xs text-slate-600 dark:text-slate-400 truncate">Enviar dados para n8n/CRM</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
