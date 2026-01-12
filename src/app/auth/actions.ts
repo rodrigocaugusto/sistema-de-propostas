@@ -111,7 +111,28 @@ export async function logout() {
 }
 
 export async function getCurrentUser() {
-    return getSession();
+    const session = await getSession();
+    if (!session?.id) return null;
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: session.id },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                role: true,
+                companyId: true,
+                isSuperAdmin: true,
+                phone: true,
+                avatarUrl: true,
+            }
+        });
+        return user;
+    } catch (error) {
+        console.error('Error fetching current user:', error);
+        return null;
+    }
 }
 
 export async function createUser(data: {
