@@ -303,7 +303,7 @@ export default function HomePage() {
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src="https://cdn.worldvectorlogo.com/logos/zapier.svg" className="h-6 w-auto" alt="Zapier" />
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src="https://assets-global.website-files.com/620d42e86cb69f1610e7dc27/6227658c704048450f3ddbe2_make-logo-black.svg" className="h-5 w-auto dark:invert" alt="Make" />
+                                        <img src="/make-logo.png" className="h-6 w-auto" alt="Make" />
                                     </div>
                                     <p className="text-sm text-slate-500">
                                         Atualize seu CRM, notifique no Slack, dispare e-mails... o céu é o limite.
