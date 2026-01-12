@@ -78,7 +78,7 @@ export function PageHeader({
         { href: "/dashboard", label: "Dashboard", icon: Home, show: true },
         { href: "/clients", label: "Clientes", icon: Users, show: true },
         { href: "/products", label: "Produtos", icon: Package, show: true },
-        { href: "/reports", label: "Relatórios", icon: BarChart3, show: session?.role === 'admin' },
+        { href: "/reports", label: "Relatórios", icon: BarChart3, show: session?.role === 'admin' || session?.isSuperAdmin },
         { href: "/settings", label: "Configurações", icon: Settings, show: true },
         { href: "/billing", label: "Assinatura", icon: DollarSign, show: session?.role === 'admin' },
         { href: "/admin", label: "Super Admin", icon: Shield, show: session?.isSuperAdmin },
