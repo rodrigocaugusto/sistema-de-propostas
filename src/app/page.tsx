@@ -284,7 +284,7 @@ export default function HomePage() {
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="h-8 flex items-center">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src="https://logodownload.org/wp-content/uploads/2021/04/asaas-logo.png" className="h-5 w-auto object-contain" alt="Asaas" />
+                                            <img src="/asaas-logo.png" className="h-5 w-auto object-contain" alt="Asaas" />
                                         </div>
                                         <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Integração Nativa</span>
                                     </div>
@@ -299,7 +299,7 @@ export default function HomePage() {
                                     </p>
                                     <div className="flex flex-wrap gap-6 items-center opacity-70 hover:opacity-100 transition-opacity">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/N8n-logo-new.svg" className="h-6 w-auto" alt="n8n" />
+                                        <img src="/n8n-logo.png" className="h-6 w-auto" alt="n8n" />
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src="https://cdn.worldvectorlogo.com/logos/zapier.svg" className="h-6 w-auto" alt="Zapier" />
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -333,7 +333,7 @@ export default function HomePage() {
                                         <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
                                             <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shrink-0">
                                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src="https://logodownload.org/wp-content/uploads/2021/04/asaas-logo.png" className="h-3 w-auto" alt="Asaas" />
+                                                <img src="/asaas-logo.png" className="h-3 w-auto" alt="Asaas" />
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Automação Nativa</p>
@@ -344,7 +344,7 @@ export default function HomePage() {
                                         <div className="flex items-center gap-3 bg-pink-50 dark:bg-pink-900/20 p-3 rounded-lg border border-pink-100 dark:border-pink-800">
                                             <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shrink-0">
                                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/N8n-logo-new.svg" className="h-4 w-auto" alt="n8n" />
+                                                <img src="/n8n-logo.png" className="h-4 w-auto" alt="n8n" />
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="text-xs font-bold text-pink-700 dark:text-pink-300">Webhook</p>
