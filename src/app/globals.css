@@ -123,3 +123,42 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .prose-custom h1 {
+    @apply text-2xl font-bold mb-4 mt-6 text-slate-900 dark:text-white;
+  }
+  .prose-custom h2 {
+    @apply text-xl font-bold mb-3 mt-5 text-slate-800 dark:text-slate-100;
+  }
+  .prose-custom h3 {
+    @apply text-lg font-bold mb-2 mt-4 text-slate-800 dark:text-slate-200;
+  }
+  .prose-custom p {
+    @apply mb-4 leading-relaxed text-slate-700 dark:text-slate-300;
+  }
+  .prose-custom ul {
+    @apply list-disc pl-5 mb-4 text-slate-700 dark:text-slate-300;
+  }
+  .prose-custom ol {
+    @apply list-decimal pl-5 mb-4 text-slate-700 dark:text-slate-300;
+  }
+  .prose-custom li {
+    @apply mb-1;
+  }
+  .prose-custom strong {
+    @apply font-bold text-slate-900 dark:text-white;
+  }
+  .prose-custom a {
+    @apply text-emerald-600 hover:text-emerald-500 underline;
+  }
+  .prose-custom blockquote {
+    @apply border-l-4 border-slate-300 pl-4 italic text-slate-600 dark:text-slate-400 my-4;
+  }
+  .prose-custom code {
+    @apply bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-sm font-mono text-emerald-600 dark:text-emerald-400;
+  }
+  .prose-custom pre {
+    @apply bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto my-4 text-sm;
+  }
+}

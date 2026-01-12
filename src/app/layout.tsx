@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SupportFloatButton } from "@/components/support-float-button";
+import { KnowledgeBaseSidebar } from "@/components/knowledge-base-sidebar";
 import "./globals.css";
 
 const geistSans = Geist({
