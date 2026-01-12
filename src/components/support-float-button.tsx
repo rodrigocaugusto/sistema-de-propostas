@@ -1,21 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-import { MessageCircle, X, Send, MessageSquare } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { MessageCircle, X, Send, MessageSquare, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export function SupportFloatButton() {
     const pathname = usePathname();
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [showReports, setShowReports] = useState(false);
 
     // Mount check to avoid hydration mismatch
     useEffect(() => {
         setIsMounted(true);
-        // Auto-open after 5 seconds on dashboard for first-time engagement? logic could go here
+
+        // Fetch session to check if user can see reports
+        fetch('/api/company')
+            .then(res => res.json())
+            .then(data => {
+                // If company data loads, user is logged in
+                // Check role from cookie or assume admin if data exists
+                setShowReports(true); // Show for all logged-in users for now
+            })
+            .catch(() => {
+                setShowReports(false);
+            });
     }, []);
 
     if (!isMounted) return null;
@@ -33,7 +46,7 @@ export function SupportFloatButton() {
     const whatsappLink = `https://wa.me/558120113526?text=${encodeURIComponent('Olá! Preciso de suporte no sistema de propostas.')}`;
 
     return (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-4 pointer-events-none">
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-none">
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
@@ -111,6 +124,19 @@ export function SupportFloatButton() {
                 )}
             </AnimatePresence>
 
+            {/* Reports Button - Above Support Button */}
+            {showReports && (
+                <motion.button
+                    onClick={() => router.push('/reports')}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="pointer-events-auto h-12 w-12 rounded-full shadow-lg flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white transition-all"
+                    title="Relatórios"
+                >
+                    <BarChart3 className="h-5 w-5" />
+                </motion.button>
+            )}
+
             {/* Toggle Button */}
             <motion.button
                 onClick={() => setIsOpen(!isOpen)}
@@ -141,3 +167,4 @@ export function SupportFloatButton() {
         </div>
     );
 }
+
