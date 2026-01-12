@@ -52,14 +52,20 @@ export async function getSession(): Promise<UserPayload | null> {
 }
 
 export async function setSession(token: string): Promise<void> {
-    const cookieStore = await cookies();
-    cookieStore.set('auth-token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/',
-    });
+    try {
+        const cookieStore = await cookies();
+        cookieStore.set('auth-token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            path: '/',
+        });
+        console.log('[AUTH] Session cookie set successfully');
+    } catch (error) {
+        console.error('[AUTH] Failed to set session cookie:', error);
+        throw error;
+    }
 }
 
 export async function clearSession(): Promise<void> {

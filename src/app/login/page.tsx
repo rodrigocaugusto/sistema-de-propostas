@@ -53,7 +53,8 @@ export default function LoginPage() {
             } else {
                 toast.error(result.error || 'Erro ao fazer login');
             }
-        } catch {
+        } catch (error) {
+            console.error('[LOGIN PAGE] Error:', error);
             toast.error('Erro ao fazer login. Tente novamente.');
         } finally {
             setIsLoading(false);
