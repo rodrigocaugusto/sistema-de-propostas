@@ -136,10 +136,10 @@ export default async function SettingsPage() {
                 <Card className="bg-white dark:bg-slate-900 shadow-xl border-0">
                     <Tabs defaultValue="company" className="w-full">
                         <div className="px-6 py-4">
-                            <TabsList className="bg-transparent p-0 h-auto gap-4 flex-wrap justify-start">
+                            <TabsList className="bg-transparent p-0 h-auto gap-2 flex-wrap justify-start">
                                 <TabsTrigger
                                     value="company"
-                                    className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700 data-[state=active]:border-emerald-200 dark:data-[state=active]:bg-emerald-900/30 dark:data-[state=active]:text-emerald-400 dark:data-[state=active]:border-emerald-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+                                    className="relative px-3 py-1.5 bg-transparent rounded-full border border-transparent data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700 data-[state=active]:border-emerald-200 dark:data-[state=active]:bg-emerald-900/30 dark:data-[state=active]:text-emerald-400 dark:data-[state=active]:border-emerald-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap text-sm"
                                 >
                                     <div className="flex items-center gap-2">
                                         <Building2 className="h-4 w-4" />
@@ -149,7 +149,7 @@ export default async function SettingsPage() {
 
                                 <TabsTrigger
                                     value="integrations"
-                                    className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 dark:data-[state=active]:bg-indigo-900/30 dark:data-[state=active]:text-indigo-400 dark:data-[state=active]:border-indigo-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+                                    className="relative px-3 py-1.5 bg-transparent rounded-full border border-transparent data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 dark:data-[state=active]:bg-indigo-900/30 dark:data-[state=active]:text-indigo-400 dark:data-[state=active]:border-indigo-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap text-sm"
                                 >
                                     <div className="flex items-center gap-2">
                                         <LinkIcon className="h-4 w-4" />
@@ -164,7 +164,7 @@ export default async function SettingsPage() {
 
                                 <TabsTrigger
                                     value="payments"
-                                    className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-cyan-100 data-[state=active]:text-cyan-700 data-[state=active]:border-cyan-200 dark:data-[state=active]:bg-cyan-900/30 dark:data-[state=active]:text-cyan-400 dark:data-[state=active]:border-cyan-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+                                    className="relative px-3 py-1.5 bg-transparent rounded-full border border-transparent data-[state=active]:bg-cyan-100 data-[state=active]:text-cyan-700 data-[state=active]:border-cyan-200 dark:data-[state=active]:bg-cyan-900/30 dark:data-[state=active]:text-cyan-400 dark:data-[state=active]:border-cyan-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap text-sm"
                                 >
                                     <div className="flex items-center gap-2">
                                         <CreditCard className="h-4 w-4" />
@@ -178,7 +178,7 @@ export default async function SettingsPage() {
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="terms"
-                                    className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700 data-[state=active]:border-amber-200 dark:data-[state=active]:bg-amber-900/30 dark:data-[state=active]:text-amber-400 dark:data-[state=active]:border-amber-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+                                    className="relative px-3 py-1.5 bg-transparent rounded-full border border-transparent data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700 data-[state=active]:border-amber-200 dark:data-[state=active]:bg-amber-900/30 dark:data-[state=active]:text-amber-400 dark:data-[state=active]:border-amber-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap text-sm"
                                 >
                                     <div className="flex items-center gap-2">
                                         <Receipt className="h-4 w-4" />
@@ -192,7 +192,7 @@ export default async function SettingsPage() {
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="notes"
-                                    className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-violet-100 data-[state=active]:text-violet-700 data-[state=active]:border-violet-200 dark:data-[state=active]:bg-violet-900/30 dark:data-[state=active]:text-violet-400 dark:data-[state=active]:border-violet-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+                                    className="relative px-3 py-1.5 bg-transparent rounded-full border border-transparent data-[state=active]:bg-violet-100 data-[state=active]:text-violet-700 data-[state=active]:border-violet-200 dark:data-[state=active]:bg-violet-900/30 dark:data-[state=active]:text-violet-400 dark:data-[state=active]:border-violet-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap text-sm"
                                 >
                                     <div className="flex items-center gap-2">
                                         <FileText className="h-4 w-4" />
@@ -207,7 +207,7 @@ export default async function SettingsPage() {
 
                                 <TabsTrigger
                                     value="portfolio"
-                                    className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-red-100 data-[state=active]:text-red-700 data-[state=active]:border-red-200 dark:data-[state=active]:bg-red-900/30 dark:data-[state=active]:text-red-400 dark:data-[state=active]:border-red-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+                                    className="relative px-3 py-1.5 bg-transparent rounded-full border border-transparent data-[state=active]:bg-red-100 data-[state=active]:text-red-700 data-[state=active]:border-red-200 dark:data-[state=active]:bg-red-900/30 dark:data-[state=active]:text-red-400 dark:data-[state=active]:border-red-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap text-sm"
                                 >
                                     <div className="flex items-center gap-2">
                                         <Video className="h-4 w-4" />
@@ -222,7 +222,7 @@ export default async function SettingsPage() {
 
                                 <TabsTrigger
                                     value="clients"
-                                    className="relative px-4 py-2 bg-transparent rounded-full border border-transparent data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200 dark:data-[state=active]:bg-blue-900/30 dark:data-[state=active]:text-blue-400 dark:data-[state=active]:border-blue-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+                                    className="relative px-3 py-1.5 bg-transparent rounded-full border border-transparent data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200 dark:data-[state=active]:bg-blue-900/30 dark:data-[state=active]:text-blue-400 dark:data-[state=active]:border-blue-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap text-sm"
                                 >
                                     <div className="flex items-center gap-2">
                                         <ImageIcon className="h-4 w-4" />
