@@ -224,13 +224,14 @@ export async function acceptProposal(id: string) {
                 const oneTimeItems = items.filter((i: any) => i.type === 'one-time');
                 const recurringItems = items.filter((i: any) => i.type === 'recurring');
 
-                // Função para gerar descrição dos itens
+                // Função para gerar descrição dos itens (nome + descrição)
                 const buildItemsDescription = (itemsList: any[], maxChars: number = 400) => {
                     if (itemsList.length === 0) return '';
 
                     let desc = itemsList.map((item: any) => {
                         const qty = item.quantity > 1 ? `${item.quantity}x ` : '';
-                        return `${qty}${item.name}`;
+                        const itemDesc = item.description ? ` - ${item.description}` : '';
+                        return `${qty}${item.name}${itemDesc}`;
                     }).join('; ');
 
                     if (desc.length > maxChars) {
