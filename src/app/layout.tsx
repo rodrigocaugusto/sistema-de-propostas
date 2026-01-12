@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SupportFloatButton } from "@/components/support-float-button";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,6 +38,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <SupportFloatButton />
           <Toaster />
         </ThemeProvider>
       </body>
