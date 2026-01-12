@@ -26,10 +26,14 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export async function createToken(user: UserPayload): Promise<string> {
-    // Remove potentially large fields like phone to keep token size small
-    // Keep avatarUrl as it's needed for display
+    // Remove potentially large fields to keep token size small
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { phone, ...payload } = user;
+
+    // Don't include base64 images in token (too large)
+    if (payload.avatarUrl?.startsWith('data:')) {
+        payload.avatarUrl = null;
+    }
 
     return new SignJWT({ ...payload })
         .setProtectedHeader({ alg: 'HS256' })
@@ -53,7 +57,25 @@ export async function getSession(): Promise<UserPayload | null> {
 
     if (!token) return null;
 
-    return verifyToken(token);
+    const session = await verifyToken(token);
+
+    // If session exists but avatarUrl is missing, fetch from database
+    if (session && !session.avatarUrl) {
+        try {
+            const { prisma } = await import('@/lib/db');
+            const user = await prisma.user.findUnique({
+                where: { id: session.id },
+                select: { avatarUrl: true }
+            });
+            if (user?.avatarUrl) {
+                session.avatarUrl = user.avatarUrl;
+            }
+        } catch {
+            // Ignore errors fetching avatar
+        }
+    }
+
+    return session;
 }
 
 export async function setSession(token: string): Promise<void> {
