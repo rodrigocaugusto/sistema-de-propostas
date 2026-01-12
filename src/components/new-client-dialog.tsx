@@ -18,14 +18,19 @@ import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
 import { useMask } from '@react-input/mask';
 
-export function NewClientDialog() {
+interface NewClientDialogProps {
+    hasAsaasIntegration?: boolean;
+}
+
+export function NewClientDialog({ hasAsaasIntegration }: NewClientDialogProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         company: '',
-        phone: ''
+        phone: '',
+        cpfCnpj: ''
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -41,11 +46,12 @@ export function NewClientDialog() {
                 name: formData.name,
                 email: formData.email,
                 company: formData.company || null,
-                phone: formData.phone || null
+                phone: formData.phone || null,
+                cpfCnpj: formData.cpfCnpj || null
             });
             toast.success('Cliente criado com sucesso!');
             setOpen(false);
-            setFormData({ name: '', email: '', company: '', phone: '' });
+            setFormData({ name: '', email: '', company: '', phone: '', cpfCnpj: '' });
         } catch (error) {
             console.error(error);
             toast.error('Erro ao criar cliente. Verifique se o email já existe.');
@@ -110,6 +116,18 @@ export function NewClientDialog() {
                             placeholder="(11) 99999-9999"
                         />
                     </div>
+                    {hasAsaasIntegration && (
+                        <div className="space-y-2">
+                            <Label htmlFor="cpfCnpj">CPF / CNPJ</Label>
+                            <Input
+                                id="cpfCnpj"
+                                value={formData.cpfCnpj}
+                                onChange={(e) => setFormData({ ...formData, cpfCnpj: e.target.value })}
+                                placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                            />
+                            <p className="text-xs text-muted-foreground">Necessário para cobranças via Asaas</p>
+                        </div>
+                    )}
                     <DialogFooter className="pt-4">
                         <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                             Cancelar

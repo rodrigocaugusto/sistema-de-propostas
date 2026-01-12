@@ -1,4 +1,4 @@
-import { fetchClients, logoutAction } from "@/app/actions";
+import { fetchClients, fetchCompany, logoutAction } from "@/app/actions";
 import { getSession } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ interface ClientData {
 export default async function ClientsPage() {
     const session = await getSession();
     const clients: ClientData[] = await fetchClients();
+    const company = await fetchCompany();
+    const hasAsaasIntegration = !!(company as any)?.hasAsaasIntegration;
 
     const totalClients = clients.length;
     const totalValue = clients.reduce((sum: number, c: ClientData) => sum + (c.totalValue || 0), 0);
@@ -37,7 +39,7 @@ export default async function ClientsPage() {
                 iconGradient="from-cyan-500 to-blue-600"
                 session={session}
                 logoutAction={logoutAction}
-                actions={<NewClientDialog />}
+                actions={<NewClientDialog hasAsaasIntegration={hasAsaasIntegration} />}
             />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">

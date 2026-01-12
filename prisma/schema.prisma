@@ -111,6 +111,7 @@ model Proposal {
   asaasPaymentId      String?
   asaasInvoiceUrl     String?
   asaasPaymentStatus  String?
+  asaasSubscriptionId String?
   paymentTerms        Json?
   validityDays        Int           @default(15)
   notes               Json?

@@ -109,3 +109,47 @@ export async function createAsaasPayment(apiKey: string, data: AsaasPaymentData)
         status: body.status // "PENDING", etc
     };
 }
+
+interface AsaasSubscriptionData {
+    customer: string;
+    billingType: "BOLETO" | "CREDIT_CARD" | "PIX" | "UNDEFINED";
+    value: number;
+    nextDueDate: string; // YYYY-MM-DD
+    cycle: "WEEKLY" | "BIWEEKLY" | "MONTHLY" | "BIMONTHLY" | "QUARTERLY" | "SEMIANNUALLY" | "YEARLY";
+    description?: string;
+    externalReference?: string;
+    maxPayments?: number; // null = indefinido
+}
+
+export async function createAsaasSubscription(apiKey: string, data: AsaasSubscriptionData) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'access_token': apiKey
+    };
+
+    const res = await fetch(`${ASAAS_API_URL}/subscriptions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            customer: data.customer,
+            billingType: data.billingType,
+            value: data.value,
+            nextDueDate: data.nextDueDate,
+            cycle: data.cycle,
+            description: data.description,
+            externalReference: data.externalReference,
+            ...(data.maxPayments ? { maxPayments: data.maxPayments } : {})
+        })
+    });
+
+    const body = await res.json();
+    if (!res.ok) {
+        throw new Error(`Erro Asaas (Criar Assinatura): ${body.errors?.[0]?.description || JSON.stringify(body)}`);
+    }
+
+    return {
+        id: body.id,
+        status: body.status,
+        nextDueDate: body.nextDueDate
+    };
+}

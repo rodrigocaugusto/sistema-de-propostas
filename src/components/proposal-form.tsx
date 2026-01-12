@@ -546,6 +546,20 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
                                 />
                             </div>
                         </div>
+                        {(company as any)?.hasAsaasIntegration && (
+                            <div className="grid md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-slate-600 dark:text-slate-400">CPF / CNPJ (Integração Asaas)</Label>
+                                    <Input
+                                        value={clientCpfCnpj}
+                                        onChange={(e) => setClientCpfCnpj(e.target.value)}
+                                        placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                                        className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground">Necessário para emissão de cobrança automática.</p>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

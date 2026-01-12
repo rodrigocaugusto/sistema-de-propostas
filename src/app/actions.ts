@@ -229,7 +229,7 @@ export async function acceptProposal(id: string) {
                         billingType: "UNDEFINED", // Cliente escolhe no checkout do Asaas
                         value: fullProposal.totalOneTime,
                         dueDate: dueDate.toISOString().split('T')[0],
-                        description: `Proposta Aprovada #${fullProposal.proposalNumber || id.slice(0, 6)}`,
+                        description: `Proposta Aprovada #${fullProposal.proposalNumber || id.slice(0, 6)} - Taxa Única`,
                         externalReference: fullProposal.id
                     });
 
@@ -241,7 +241,57 @@ export async function acceptProposal(id: string) {
                             asaasPaymentStatus: payment.status
                         }
                     });
-                    console.log("Cobrança Asaas gerada:", payment.id);
+                    console.log("Cobrança única Asaas gerada:", payment.id);
+                }
+
+                // 3. Create Subscription (Recurring Value)
+                if (fullProposal.totalRecurring > 0) {
+                    const { createAsaasSubscription } = await import('@/lib/asaas');
+                    const nextDueDate = new Date();
+                    nextDueDate.setDate(nextDueDate.getDate() + 2); // Primeiro vencimento em 2 dias
+
+                    // Determinar ciclo baseado no período da proposta
+                    let cycle: "MONTHLY" | "YEARLY" = "MONTHLY";
+                    const periodType = (fullProposal as any).recurringPeriodType;
+                    if (periodType === 'year' || periodType === 'years') {
+                        cycle = "YEARLY";
+                    }
+
+                    // Calcular maxPayments se período for definido
+                    let maxPayments: number | undefined;
+                    const period = (fullProposal as any).recurringPeriod;
+                    if (period && period > 0 && periodType !== 'indeterminate') {
+                        if (cycle === "MONTHLY") {
+                            maxPayments = periodType === 'year' || periodType === 'years'
+                                ? period * 12
+                                : period;
+                        } else {
+                            maxPayments = period;
+                        }
+                    }
+
+                    try {
+                        const subscription = await createAsaasSubscription(company.asaasApiKey, {
+                            customer: customerId,
+                            billingType: "UNDEFINED",
+                            value: fullProposal.totalRecurring,
+                            nextDueDate: nextDueDate.toISOString().split('T')[0],
+                            cycle,
+                            description: `Proposta Aprovada #${fullProposal.proposalNumber || id.slice(0, 6)} - Recorrência`,
+                            externalReference: fullProposal.id,
+                            maxPayments
+                        });
+
+                        await prisma.proposal.update({
+                            where: { id: fullProposal.id },
+                            data: {
+                                asaasSubscriptionId: subscription.id
+                            }
+                        });
+                        console.log("Assinatura Asaas gerada:", subscription.id);
+                    } catch (subError) {
+                        console.error("Erro ao criar assinatura Asaas:", subError);
+                    }
                 }
             }
         }
