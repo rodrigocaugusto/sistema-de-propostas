@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { login } from '@/app/auth/actions';
 import { requestPasswordReset } from '@/app/actions';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Loader2, Lock, Mail, AlertCircle } from 'lucide-react';
@@ -43,8 +42,14 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            // Pass honeypot to login action
-            const result = await login(email, password, honeypot);
+            // Use API Route instead of Server Action to avoid 405 error
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, honeypot }),
+            });
+
+            const result = await response.json();
 
             if (result.success) {
                 toast.success('Login realizado com sucesso!');
