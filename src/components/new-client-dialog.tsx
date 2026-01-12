@@ -17,6 +17,7 @@ import { saveClient } from '@/app/actions';
 import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
 import { useMask } from '@react-input/mask';
+import { CpfCnpjInput } from '@/components/ui/cpf-cnpj-input';
 
 interface NewClientDialogProps {
     hasAsaasIntegration?: boolean;
@@ -119,11 +120,9 @@ export function NewClientDialog({ hasAsaasIntegration }: NewClientDialogProps) {
                     {hasAsaasIntegration && (
                         <div className="space-y-2">
                             <Label htmlFor="cpfCnpj">CPF / CNPJ</Label>
-                            <Input
-                                id="cpfCnpj"
+                            <CpfCnpjInput
                                 value={formData.cpfCnpj}
-                                onChange={(e) => setFormData({ ...formData, cpfCnpj: e.target.value })}
-                                placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                                onChange={(value) => setFormData({ ...formData, cpfCnpj: value })}
                             />
                             <p className="text-xs text-muted-foreground">Necessário para cobranças via Asaas</p>
                         </div>
