@@ -26,9 +26,10 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export async function createToken(user: UserPayload): Promise<string> {
-    // Remove potentially large fields like avatarUrl to keep token size small
+    // Remove potentially large fields like phone to keep token size small
+    // Keep avatarUrl as it's needed for display
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { avatarUrl, phone, ...payload } = user;
+    const { phone, ...payload } = user;
 
     return new SignJWT({ ...payload })
         .setProtectedHeader({ alg: 'HS256' })
