@@ -23,6 +23,12 @@ model User {
   lastLogin     DateTime?
   failedLoginAttempts Int       @default(0)
   lockoutUntil        DateTime?
+  
+  // Email verification for trial accounts
+  emailVerified           Boolean   @default(false)
+  emailVerificationToken  String?   @unique
+  emailVerificationExpires DateTime?
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   proposals     Proposal[]

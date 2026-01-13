@@ -44,8 +44,8 @@ export default function RegisterPage() {
             });
 
             if (result.success) {
-                toast.success('Conta criada com sucesso!');
-                router.push('/dashboard');
+                toast.success('Conta criada! Verifique seu email.');
+                router.push(`/register/email-sent?email=${encodeURIComponent(formData.email)}`);
             } else {
                 toast.error(result.error || 'Erro ao criar conta');
                 setIsLoading(false);
@@ -68,7 +68,7 @@ export default function RegisterPage() {
                     <div className="mx-auto flex justify-center">
                         <img
                             src="/system-logo.png"
-                            alt="Sistema de Propostas"
+                            alt="DL Pro"
                             className="h-20 w-auto object-contain dark:invert"
                         />
                     </div>

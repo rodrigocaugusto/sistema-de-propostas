@@ -4,6 +4,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SupportFloatButton } from "@/components/support-float-button";
 import { KnowledgeBaseSidebar } from "@/components/knowledge-base-sidebar";
+import { FloatingReportsButton } from "@/components/floating-reports-button";
+import { LandingWhatsAppChat } from "@/components/landing-whatsapp-chat";
+import { CookieConsent } from "@/components/cookie-consent";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,8 +20,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema de Propostas Comerciais",
-  description: "Gerencie e envie propostas comerciais de alto nível.",
+  title: "Digital Leads Pro - Sistema de Propostas Comerciais",
+  description: "Gerencie e envie propostas comerciais de alto nível com o DL Pro.",
 };
 
 export default function RootLayout({
@@ -40,7 +43,10 @@ export default function RootLayout({
         >
           {children}
           <SupportFloatButton />
+          <FloatingReportsButton />
           <KnowledgeBaseSidebar />
+          <LandingWhatsAppChat />
+          <CookieConsent />
           <Toaster />
         </ThemeProvider>
       </body>

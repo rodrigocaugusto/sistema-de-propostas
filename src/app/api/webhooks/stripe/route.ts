@@ -30,7 +30,7 @@ async function sendWelcomeEmail(to: string, data: {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bem-vindo ao Propostas.ai!</title>
+    <title>Bem-vindo ao DL Pro!</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
     <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -43,7 +43,7 @@ async function sendWelcomeEmail(to: string, data: {
                         <td style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); padding: 50px 40px; text-align: center;">
                             <div style="font-size: 60px; margin-bottom: 15px;">🚀</div>
                             <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700;">
-                                Bem-vindo ao Propostas.ai!
+                                Bem-vindo ao DL Pro!
                             </h1>
                             <p style="margin: 15px 0 0; color: rgba(255,255,255,0.9); font-size: 18px;">
                                 Sua conta foi criada com sucesso
@@ -139,7 +139,7 @@ async function sendWelcomeEmail(to: string, data: {
     `;
 
     const text = `
-Bem-vindo ao Propostas.ai!
+Bem-vindo ao DL Pro!
 
 Olá ${data.name}!
 
@@ -163,7 +163,7 @@ Precisa de ajuda? contato@digitalleads.com.br
 
     return sendEmail({
         to,
-        subject: '🚀 Bem-vindo ao Propostas.ai - Suas credenciais de acesso',
+        subject: '🚀 Bem-vindo ao DL Pro - Suas credenciais de acesso',
         html,
         text,
     });

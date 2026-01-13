@@ -102,7 +102,7 @@ export default function LoginPage() {
                     <div className="mx-auto flex justify-center">
                         <img
                             src="/system-logo.png"
-                            alt="Sistema de Propostas"
+                            alt="DL Pro"
                             className="h-20 w-auto object-contain dark:invert"
                         />
                     </div>

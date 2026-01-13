@@ -1,40 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { MessageCircle, X, Send, MessageSquare, BarChart3 } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { MessageCircle, X, Send, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export function SupportFloatButton() {
     const pathname = usePathname();
-    const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
-    const [showReports, setShowReports] = useState(false);
 
     // Mount check to avoid hydration mismatch
     useEffect(() => {
         setIsMounted(true);
-
-        // Fetch session to check if user can see reports
-        fetch('/api/company')
-            .then(res => res.json())
-            .then(data => {
-                // If company data loads, user is logged in
-                // Check role from cookie or assume admin if data exists
-                setShowReports(true); // Show for all logged-in users for now
-            })
-            .catch(() => {
-                setShowReports(false);
-            });
     }, []);
 
     if (!isMounted) return null;
 
-    // Do not show on public proposal pages, login, or checkout public pages
+    // Do not show on public proposal pages, login, landing page, or checkout public pages
     if (
+        pathname === '/' ||
         pathname.startsWith('/p/') ||
         pathname === '/login' ||
         pathname === '/register' ||
@@ -118,24 +104,11 @@ export function SupportFloatButton() {
 
                         {/* Footer - Optional branding */}
                         <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 text-center">
-                            <p className="text-[10px] text-slate-400">Digital Leads Support Team</p>
+                            <p className="text-[10px] text-slate-400">DL Pro Support</p>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Reports Button - Above Support Button */}
-            {showReports && (
-                <motion.button
-                    onClick={() => router.push('/reports')}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="pointer-events-auto h-12 w-12 rounded-full shadow-lg flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white transition-all"
-                    title="Relatórios"
-                >
-                    <BarChart3 className="h-5 w-5" />
-                </motion.button>
-            )}
 
             {/* Toggle Button */}
             <motion.button

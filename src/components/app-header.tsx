@@ -68,7 +68,7 @@ export function AppHeader({ session, logoutAction }: AppHeaderProps) {
                     <Link href="/dashboard" className="flex items-center gap-3">
                         <img
                             src="/system-logo.png"
-                            alt="Sistema de Propostas"
+                            alt="DL Pro"
                             className="h-8 sm:h-10 w-auto object-contain dark:invert"
                         />
                     </Link>

@@ -5,7 +5,7 @@ import { PLANS, PlanId } from '@/lib/plans';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Check, LogIn, ArrowRight, Zap, Clock, Target, CreditCard, Bell, Link2, ChevronDown, Mail, MessageSquare, BarChart3, FileText, Users, Shield, Palette, Code, Briefcase, Play, Loader2 } from 'lucide-react';
+import { Check, LogIn, ArrowRight, Zap, Clock, Target, CreditCard, Bell, Link2, ChevronDown, Mail, MessageSquare, BarChart3, FileText, Users, Shield, Palette, Code, Briefcase, Play, Loader2, MapPin, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -61,10 +61,10 @@ export default function HomePage() {
             {/* Header */}
             <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
                 <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <img
                             src="/system-logo.png"
-                            alt="Propostas.ai"
+                            alt="DL Pro"
                             className="h-10 w-auto object-contain dark:invert"
                         />
                     </div>
@@ -185,7 +185,7 @@ export default function HomePage() {
                                     <span className="block"><strong>14h20</strong> → Webhook dispara e atualiza seu CRM</span>
                                     <span className="block"><strong>14h30</strong> → Você liga para fechar os detalhes</span>
                                 </p>
-                                <p className="mt-4 font-bold text-violet-700 dark:text-violet-300">Não é ficção. É o Propostas.ai trabalhando para você.</p>
+                                <p className="mt-4 font-bold text-violet-700 dark:text-violet-300">Não é ficção. É o DL Pro trabalhando para você.</p>
                             </div>
                         </div>
 
@@ -531,31 +531,51 @@ export default function HomePage() {
                 {/* FOOTER */}
                 <footer className="bg-slate-900 text-white py-16">
                     <div className="container max-w-6xl mx-auto px-6">
-                        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
+                            {/* Logo & Description */}
                             <div className="text-center md:text-left">
-                                <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
+                                <div className="flex items-center gap-2 justify-center md:justify-start mb-4">
                                     <img
-                                        src="/system-logo.png"
+                                        src="/footer-logo.png"
                                         alt="Digital Leads"
-                                        className="h-8 w-auto object-contain dark:invert opacity-80"
+                                        className="h-10 w-auto object-contain"
                                     />
                                 </div>
                                 <p className="text-slate-400 text-sm">Sistema de Propostas Comerciais para quem vende sério</p>
                             </div>
-                            <div className="flex flex-col items-center md:items-end gap-4">
-                                <div className="flex items-center gap-2 text-slate-400">
-                                    <Mail className="h-4 w-4" />
-                                    <span className="text-sm">contato@digitalleads.com.br</span>
+
+                            {/* Contact Info */}
+                            <div className="text-center md:text-left">
+                                <h4 className="font-semibold text-white mb-4">Contato</h4>
+                                <div className="space-y-3 text-slate-400 text-sm">
+                                    <p className="flex items-start gap-2 justify-center md:justify-start">
+                                        <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                                        <span>Rua José Álvaro de Melo, 355 - Piedade<br />Jabotaão dos Guararapes / PE</span>
+                                    </p>
+                                    <p className="flex items-center gap-2 justify-center md:justify-start">
+                                        <Phone className="h-4 w-4" />
+                                        <span>(81) 2011-3526</span>
+                                    </p>
+                                    <p className="flex items-center gap-2 justify-center md:justify-start">
+                                        <Mail className="h-4 w-4" />
+                                        <span>contato@digitalleads.com.br</span>
+                                    </p>
                                 </div>
-                                <div className="flex gap-6 text-sm text-slate-400">
-                                    <Link href="#" className="hover:text-white transition-colors">Termos</Link>
-                                    <Link href="#" className="hover:text-white transition-colors">Privacidade</Link>
+                            </div>
+
+                            {/* Links */}
+                            <div className="text-center md:text-left">
+                                <h4 className="font-semibold text-white mb-4">Legal</h4>
+                                <div className="flex flex-col gap-2 text-sm text-slate-400">
+                                    <Link href="/termos" className="hover:text-white transition-colors">Termos de Uso</Link>
+                                    <Link href="/privacidade" className="hover:text-white transition-colors">Privacidade e Cookies</Link>
                                     <Link href="#faq" className="hover:text-white transition-colors">FAQ</Link>
                                 </div>
                             </div>
                         </div>
+
                         <div className="mt-12 pt-8 border-t border-slate-800 text-center text-sm text-slate-500">
-                            © 2026 Digital Leads. Todos os direitos reservados.
+                            © {new Date().getFullYear()} Digital Leads. Todos os direitos reservados.
                         </div>
                     </div>
                 </footer>

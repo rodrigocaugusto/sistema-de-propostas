@@ -20,7 +20,7 @@ interface SendEmailOptions {
 
 export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
     const fromEmail = process.env.SMTP_FROM_EMAIL || 'info@digitalleads.com.br';
-    const fromName = process.env.SMTP_FROM_NAME || 'Digital Leads';
+    const fromName = process.env.SMTP_FROM_NAME || 'DL Pro';
 
     try {
         const info = await transporter.sendMail({
@@ -309,7 +309,7 @@ export function getAcceptanceConfirmationTemplate(data: {
                 
                 <!-- Footer -->
                 <p style="margin: 30px 0 0; color: #a1a1aa; font-size: 12px; text-align: center;">
-                    Este email foi enviado automaticamente pelo Sistema de Propostas.
+                    Este email foi enviado automaticamente pelo DL Pro.
                 </p>
             </td>
         </tr>
@@ -477,7 +477,7 @@ export function getAdminAlertTemplate(data: {
         </div>
 
         <p style="color: #71717a; font-size: 12px; margin-top: 30px; text-align: center; border-top: 1px solid #e4e4e7; padding-top: 20px;">
-            Sistema de Propostas - Notificação Administrativa Automática
+            DL Pro - Notificação Administrativa Automática
         </p>
     </div>
 </body>
@@ -504,6 +504,144 @@ export async function sendAdminNotification(type: 'new_subscription' | 'new_user
 
     return await sendEmail({
         to: adminEmail,
+        subject: template.subject,
+        html: template.html,
+        text: template.text
+    });
+}
+
+// ========================
+// EMAIL VERIFICATION TEMPLATE
+// ========================
+
+export function getEmailVerificationTemplate(data: {
+    userName: string;
+    verificationUrl: string;
+}) {
+    return {
+        subject: '✉️ Confirme seu email - DL Pro',
+        html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirme seu Email</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); padding: 50px 40px; text-align: center;">
+                            <div style="font-size: 60px; margin-bottom: 15px;">📧</div>
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                                Confirme seu Email
+                            </h1>
+                            <p style="margin: 15px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                                Estamos quase lá!
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="margin: 0 0 20px; color: #18181b; font-size: 18px; line-height: 1.6;">
+                                Olá <strong>${data.userName}</strong>! 👋
+                            </p>
+                            <p style="margin: 0 0 30px; color: #52525b; font-size: 16px; line-height: 1.7;">
+                                Obrigado por se cadastrar no DL Pro! Para ativar sua conta e começar a usar 
+                                todas as funcionalidades, clique no botão abaixo para confirmar seu email.
+                            </p>
+                            
+                            <!-- CTA Button -->
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="${data.verificationUrl}" 
+                                   style="display: inline-block; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: #ffffff; text-decoration: none; padding: 18px 50px; border-radius: 12px; font-size: 18px; font-weight: 700; letter-spacing: 0.3px; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);">
+                                    ✅ Confirmar Email
+                                </a>
+                            </div>
+                            
+                            <div style="background-color: #fef3c7; border-radius: 12px; padding: 15px; margin: 30px 0;">
+                                <p style="margin: 0; color: #92400e; font-size: 14px; text-align: center;">
+                                    ⏰ <strong>Atenção:</strong> Este link expira em 24 horas.
+                                </p>
+                            </div>
+                            
+                            <p style="margin: 0; color: #71717a; font-size: 14px;">
+                                Se você não criou uma conta no DL Pro, pode ignorar este email com segurança.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Link alternativo -->
+                    <tr>
+                        <td style="padding: 0 40px 30px; text-align: center;">
+                            <p style="margin: 0 0 10px; color: #a1a1aa; font-size: 12px;">
+                                Se o botão não funcionar, copie e cole este link no seu navegador:
+                            </p>
+                            <a href="${data.verificationUrl}" style="color: #7c3aed; font-size: 12px; word-break: break-all; text-decoration: none;">
+                                ${data.verificationUrl}
+                            </a>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #fafafa; padding: 25px 40px; text-align: center; border-top: 1px solid #f4f4f5;">
+                            <p style="margin: 0; color: #71717a; font-size: 12px;">
+                                DL Pro - Sistema de Propostas Comerciais
+                            </p>
+                        </td>
+                    </tr>
+                    
+                </table>
+                
+                <p style="margin: 30px 0 0; color: #a1a1aa; font-size: 12px; text-align: center;">
+                    © ${new Date().getFullYear()} Digital Leads. Todos os direitos reservados.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+        `,
+        text: `
+Olá ${data.userName}!
+
+Obrigado por se cadastrar no DL Pro!
+
+Para ativar sua conta, acesse o link abaixo:
+${data.verificationUrl}
+
+ATENÇÃO: Este link expira em 24 horas.
+
+Se você não criou uma conta no DL Pro, pode ignorar este email.
+
+DL Pro - Sistema de Propostas Comerciais
+        `
+    };
+}
+
+// Send email verification
+export async function sendEmailVerification(to: string, data: {
+    userName: string;
+    verificationToken: string;
+}) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
+    const verificationUrl = `${baseUrl}/verify-email/${data.verificationToken}`;
+
+    const template = getEmailVerificationTemplate({
+        userName: data.userName,
+        verificationUrl
+    });
+
+    return await sendEmail({
+        to,
         subject: template.subject,
         html: template.html,
         text: template.text

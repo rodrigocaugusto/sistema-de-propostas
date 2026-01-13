@@ -80,7 +80,7 @@ export async function requestPasswordReset(email: string) {
         await sendPasswordResetEmail(user.email, {
             userName: user.name || 'Usuário',
             newPassword: newPassword,
-            companyName: company?.name || 'Sistema de Propostas'
+            companyName: company?.name || 'DL Pro'
         });
 
         return { success: true, message: "Nova senha enviada para seu email." };

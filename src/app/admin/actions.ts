@@ -471,7 +471,7 @@ export async function adminResetUserPassword(companyId: string, newPassword: str
             await import('@/lib/email').then(mod => mod.sendPasswordResetEmail(anyUser.email, {
                 userName: anyUser.name || 'Usuário',
                 newPassword,
-                companyName: company?.name || 'Sistema de Propostas'
+                companyName: company?.name || 'DL Pro'
             }));
             return { success: true, message: `Senha resetada para ${anyUser.email}` };
         }

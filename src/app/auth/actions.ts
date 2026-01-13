@@ -11,7 +11,8 @@ import {
     generatePassword,
 } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { sendAdminNotification } from '@/lib/email';
+import { sendAdminNotification, sendEmailVerification } from '@/lib/email';
+import crypto from 'crypto';
 
 export async function login(email: string, password: string, honeypot?: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -37,6 +38,15 @@ export async function login(email: string, password: string, honeypot?: string):
         if (!user.isActive) {
             console.log(`[LOGIN] User inactive: ${email}`);
             return { success: false, error: 'Usuário desativado. Entre em contato com o administrador.' };
+        }
+
+        // 3. Check if email is verified (for trial accounts)
+        if (!user.emailVerified && !user.isSuperAdmin) {
+            console.log(`[LOGIN] Email not verified: ${email}`);
+            return {
+                success: false,
+                error: 'Email não verificado. Verifique sua caixa de entrada e clique no link de confirmação.'
+            };
         }
 
         // 2. Bruteforce protection check
@@ -449,6 +459,10 @@ export async function createTrialAccount(data: {
 
         const hashedPassword = await hashPassword(data.password);
 
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
         // Transaction to create company and user together
         const result = await prisma.$transaction(async (tx) => {
             const company = await tx.company.create({
@@ -456,6 +470,7 @@ export async function createTrialAccount(data: {
                     name: data.companyName,
                     plan: 'trial',
                     status: 'active',
+                    // trialEndsAt will be set when email is verified
                 }
             });
 
@@ -467,32 +482,36 @@ export async function createTrialAccount(data: {
                     role: 'admin',
                     companyId: company.id,
                     isSuperAdmin: false,
+                    emailVerified: false,
+                    emailVerificationToken: verificationToken,
+                    emailVerificationExpires: verificationExpires,
                 }
             });
 
             return { company, user };
         });
 
-        const token = await createToken({
-            id: result.user.id,
-            email: result.user.email,
-            name: result.user.name,
-            role: result.user.role,
-            companyId: result.company.id,
-            isSuperAdmin: result.user.isSuperAdmin,
-            phone: null,
-            avatarUrl: null,
-        });
+        // Send verification email
+        try {
+            await sendEmailVerification(data.email, {
+                userName: data.userName,
+                verificationToken: verificationToken
+            });
+            console.log(`[REGISTER] Verification email sent to ${data.email}`);
+        } catch (emailError) {
+            console.error('[REGISTER] Failed to send verification email:', emailError);
+            // Don't fail registration if email fails, user can resend
+        }
 
-        await setSession(token);
-
+        // Notify admin about new trial
         try {
             await sendAdminNotification('new_trial_user', {
-                title: `Novo Trial Cadastrado`,
+                title: `Novo Trial Cadastrado (Aguardando Verificação)`,
                 details: {
                     'Empresa': data.companyName,
                     'Nome': data.userName,
-                    'Email': data.email
+                    'Email': data.email,
+                    'Status': 'Aguardando verificação de email'
                 }
             });
         } catch (e) {
@@ -504,5 +523,45 @@ export async function createTrialAccount(data: {
     } catch (error) {
         console.error('Create trial error:', error);
         return { success: false, error: 'Erro ao criar conta. Tente novamente.' };
+    }
+}
+
+// Resend verification email
+export async function resendVerificationEmail(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { email: email.toLowerCase() }
+        });
+
+        if (!user) {
+            // Don't reveal if email exists for security
+            return { success: true };
+        }
+
+        if (user.emailVerified) {
+            return { success: false, error: 'Este email já foi verificado. Faça login normalmente.' };
+        }
+
+        // Generate new token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerificationToken: verificationToken,
+                emailVerificationExpires: verificationExpires
+            }
+        });
+
+        await sendEmailVerification(email, {
+            userName: user.name,
+            verificationToken: verificationToken
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Resend verification error:', error);
+        return { success: false, error: 'Erro ao reenviar email.' };
     }
 }

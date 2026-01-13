@@ -65,7 +65,7 @@ function SuccessContent() {
                         </h2>
                         <p className="text-slate-600 dark:text-slate-400 text-sm">
                             Enviamos suas <strong>credenciais de acesso</strong> para o email cadastrado no checkout.
-                            Procure por um email de <strong>Digital Leads</strong>.
+                            Procure por um email de <strong>DL Pro</strong>.
                         </p>
                         <p className="text-amber-600 dark:text-amber-400 text-xs mt-4">
                             💡 Não encontrou? Verifique a pasta de spam.

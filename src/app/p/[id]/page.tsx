@@ -25,7 +25,7 @@ export async function generateMetadata(
     }
 
     return {
-        title: `Proposta para ${proposal.clientName} | ${company?.name || 'Sistema de Propostas'}`,
+        title: `Proposta para ${proposal.clientName} | ${company?.name || 'DL Pro'}`,
         description: `Confira a proposta comercial preparada para ${proposal.clientName}.`,
     }
 }

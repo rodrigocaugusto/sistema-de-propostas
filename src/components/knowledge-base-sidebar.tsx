@@ -47,8 +47,8 @@ export function KnowledgeBaseSidebar() {
         a.category?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Hide on login/public pages
-    if (pathname.includes('/login') || pathname.includes('/p/')) return null;
+    // Hide on login/public/landing pages
+    if (pathname === '/' || pathname.includes('/login') || pathname.includes('/register') || pathname.includes('/p/')) return null;
 
     return (
         <Sheet>
