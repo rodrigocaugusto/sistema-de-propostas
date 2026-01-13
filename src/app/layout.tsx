@@ -7,6 +7,7 @@ import { KnowledgeBaseSidebar } from "@/components/knowledge-base-sidebar";
 import { FloatingReportsButton } from "@/components/floating-reports-button";
 import { LandingWhatsAppChat } from "@/components/landing-whatsapp-chat";
 import { CookieConsent } from "@/components/cookie-consent";
+import { TrialBannerWrapper } from "@/components/trial-banner-wrapper";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,6 +48,7 @@ export default function RootLayout({
           <KnowledgeBaseSidebar />
           <LandingWhatsAppChat />
           <CookieConsent />
+          <TrialBannerWrapper />
           <Toaster />
         </ThemeProvider>
       </body>

@@ -238,6 +238,7 @@ export async function POST(req: Request) {
                     data: {
                         name: customerName,
                         email: customerEmail,
+                        responsible: customerName,
                         plan: planId,
                         status: 'active',
                         stripeCustomerId: session.customer as string,
@@ -254,6 +255,7 @@ export async function POST(req: Request) {
                         role: 'admin',
                         companyId: company.id,
                         isActive: true,
+                        emailVerified: true, // Stripe checkout validates email
                     }
                 });
 

@@ -468,6 +468,8 @@ export async function createTrialAccount(data: {
             const company = await tx.company.create({
                 data: {
                     name: data.companyName,
+                    email: data.email.toLowerCase(),
+                    responsible: data.userName,
                     plan: 'trial',
                     status: 'active',
                     // trialEndsAt will be set when email is verified
