@@ -211,7 +211,8 @@ export async function POST(req: Request) {
                             stripeSubscriptionId: session.subscription as string,
                             stripeCustomerId: session.customer as string,
                             plan: planId,
-                            status: 'active'
+                            status: 'active',
+                            trialEndsAt: null, // Clear trial when upgrading to paid plan
                         }
                     });
                 }
