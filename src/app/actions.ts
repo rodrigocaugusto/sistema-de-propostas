@@ -2,6 +2,7 @@
 
 import {
     getCompany,
+    getCompanyById,
     updateCompany,
     createProposal,
     getProposals,
@@ -103,6 +104,11 @@ export async function deleteProposalAction(ids: string[]) {
 
 export async function fetchCompany() {
     return await getCompany();
+}
+
+// Fetch company by ID (for public proposal viewing - no session required)
+export async function fetchCompanyById(companyId: string) {
+    return await getCompanyById(companyId);
 }
 
 export async function saveCompany(data: Company) {

@@ -120,17 +120,31 @@ export async function getCompanies() {
     return enrichedCompanies;
 }
 
+// Generate strong password
+function generateStrongPassword(): string {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+
 export async function createCompany(data: {
     name: string;
     email: string;
     responsible: string;
     slug?: string;
     plan?: string;
+    sendPasswordEmail?: boolean;
 }) {
     await checkSuperAdmin();
 
     // Generate slug if not provided
     const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    // Generate random password
+    const generatedPassword = generateStrongPassword();
 
     try {
         const company = await prisma.company.create({
@@ -145,7 +159,7 @@ export async function createCompany(data: {
                     create: {
                         email: data.email,
                         name: data.responsible,
-                        password: await hashPassword('123456'), // Default password
+                        password: await hashPassword(generatedPassword),
                         role: 'admin',
                         isActive: true
                     }
@@ -153,12 +167,27 @@ export async function createCompany(data: {
             }
         });
 
-        // We should also create an initial admin user for this company? 
-        // Or just let the super admin do it manually later?
-        // Let's return the company and maybe in the UI we offer to create a user.
+        // Send password email if requested
+        if (data.sendPasswordEmail) {
+            try {
+                const { sendPasswordResetEmail } = await import('@/lib/email');
+                await sendPasswordResetEmail(data.email, {
+                    userName: data.responsible,
+                    newPassword: generatedPassword,
+                    companyName: data.name
+                });
+            } catch (emailError) {
+                console.error('Error sending password email:', emailError);
+                // Don't fail the operation, just log it
+            }
+        }
 
         revalidatePath('/admin');
-        return { success: true, company };
+        return {
+            success: true,
+            company,
+            generatedPassword // Return the password so admin can see/copy it
+        };
     } catch (error) {
         console.error('Create company error:', error);
         return { success: false, error: 'Erro ao criar empresa. Verifique se o Slug já existe.' };
@@ -698,3 +727,153 @@ export async function impersonateCompanyAdmin(companyId: string) {
     }
 }
 
+// Delete a company and all its related data
+export async function deleteCompany(companyId: string) {
+    await checkSuperAdmin();
+
+    try {
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: {
+                stripeSubscriptionId: true,
+                stripeCustomerId: true,
+                name: true
+            }
+        });
+
+        if (!company) {
+            return { success: false, error: 'Empresa não encontrada' };
+        }
+
+        // Cancel Stripe subscription if exists
+        if (company.stripeSubscriptionId) {
+            try {
+                const { getStripe } = await import('@/lib/stripe');
+                const stripe = getStripe();
+                await stripe.subscriptions.cancel(company.stripeSubscriptionId);
+            } catch (stripeError) {
+                console.error('Error canceling Stripe subscription:', stripeError);
+                // Continue with deletion even if Stripe fails
+            }
+        }
+
+        // Delete company - Prisma cascade will delete related records
+        // (users, clients, proposals, products, etc.)
+        await prisma.company.delete({
+            where: { id: companyId }
+        });
+
+        revalidatePath('/admin');
+        return { success: true, message: `Empresa "${company.name}" excluída com sucesso` };
+    } catch (error: any) {
+        console.error('Delete company error:', error);
+        return { success: false, error: error.message || 'Erro ao excluir empresa' };
+    }
+}
+
+// Get all users from a company
+export async function getCompanyUsers(companyId: string) {
+    await checkSuperAdmin();
+
+    try {
+        const users = await prisma.user.findMany({
+            where: { companyId },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                isActive: true,
+                lastLogin: true,
+                createdAt: true
+            },
+            orderBy: { createdAt: 'asc' }
+        });
+
+        return users.map(u => ({
+            ...u,
+            lastLogin: u.lastLogin?.toISOString() || null,
+            createdAt: u.createdAt.toISOString()
+        }));
+    } catch (error: any) {
+        console.error('Get company users error:', error);
+        return [];
+    }
+}
+
+// Delete a user
+export async function deleteUser(userId: string) {
+    await checkSuperAdmin();
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                company: {
+                    include: {
+                        users: {
+                            where: { role: 'admin' }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return { success: false, error: 'Usuário não encontrado' };
+        }
+
+        // Prevent deleting the last admin of a company
+        if (user.role === 'admin' && user.company?.users.length === 1) {
+            return {
+                success: false,
+                error: 'Não é possível excluir o único administrador da empresa. Exclua a empresa inteira ou adicione outro admin primeiro.'
+            };
+        }
+
+        // Prevent deleting super admin
+        if (user.isSuperAdmin) {
+            return { success: false, error: 'Não é possível excluir um Super Admin' };
+        }
+
+        await prisma.user.delete({
+            where: { id: userId }
+        });
+
+        revalidatePath('/admin');
+        return { success: true, message: `Usuário "${user.name}" excluído com sucesso` };
+    } catch (error: any) {
+        console.error('Delete user error:', error);
+        return { success: false, error: error.message || 'Erro ao excluir usuário' };
+    }
+}
+
+// Toggle user active status
+export async function toggleUserStatus(userId: string) {
+    await checkSuperAdmin();
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { isActive: true, name: true }
+        });
+
+        if (!user) {
+            return { success: false, error: 'Usuário não encontrado' };
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { isActive: !user.isActive }
+        });
+
+        revalidatePath('/admin');
+        return {
+            success: true,
+            message: `Usuário "${user.name}" ${user.isActive ? 'desativado' : 'ativado'} com sucesso`
+        };
+    } catch (error: any) {
+        console.error('Toggle user status error:', error);
+        return { success: false, error: error.message || 'Erro ao alterar status do usuário' };
+    }
+}

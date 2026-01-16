@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription, updateCompany, getCompanyInvoices, getAdminStats, adminGeneratePasswordForUser, adminResetUserPassword, startCompanyTrial, checkExpiredTrials, cancelSubscriptionImmediately, impersonateCompanyAdmin } from './actions';
+import { getCompanies, toggleCompanyStatus, createCompany, cancelCompanySubscription, reactivateCompanySubscription, updateCompany, getCompanyInvoices, getAdminStats, adminGeneratePasswordForUser, adminResetUserPassword, startCompanyTrial, checkExpiredTrials, cancelSubscriptionImmediately, impersonateCompanyAdmin, deleteCompany, getCompanyUsers, deleteUser, toggleUserStatus } from './actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw, Edit, DollarSign, TrendingUp, Receipt, Download, Key, AlertTriangle, Clock, Timer, Zap, LogIn } from 'lucide-react';
+import { Loader2, Plus, Building2, Users, FileText, Ban, CheckCircle, Search, LogOut, CreditCard, XCircle, RefreshCw, Edit, DollarSign, TrendingUp, Receipt, Download, Key, AlertTriangle, Clock, Timer, Zap, LogIn, Trash2, Copy, Mail, UserMinus, Eye, EyeOff } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/app/auth/actions';
 import { useRouter } from 'next/navigation';
@@ -94,9 +94,22 @@ export default function AdminDashboard() {
         name: '',
         email: '',
         responsible: '',
-        plan: 'pro'
+        plan: 'pro',
+        sendPasswordEmail: false
     });
     const [isCreating, setIsCreating] = useState(false);
+    const [createdPassword, setCreatedPassword] = useState<string | null>(null);
+    const [showCreatedPassword, setShowCreatedPassword] = useState(false);
+
+    // Delete Company State
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteConfirmName, setDeleteConfirmName] = useState('');
+
+    // Users Management State
+    const [isUsersOpen, setIsUsersOpen] = useState(false);
+    const [companyUsers, setCompanyUsers] = useState<any[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
 
     // Edit Company Form State
     const [editForm, setEditForm] = useState({
@@ -142,18 +155,31 @@ export default function AdminDashboard() {
         }
 
         setIsCreating(true);
+        setCreatedPassword(null);
         try {
             const result = await createCompany({
                 name: newCompany.name,
                 email: newCompany.email,
                 responsible: newCompany.responsible,
-                plan: newCompany.plan
+                plan: newCompany.plan,
+                sendPasswordEmail: newCompany.sendPasswordEmail
             });
 
             if (result.success) {
-                toast.success("Empresa criada com sucesso!");
-                setNewCompany({ name: '', email: '', responsible: '', plan: 'pro' });
-                setIsCreateOpen(false);
+                // Show the generated password
+                if (result.generatedPassword) {
+                    setCreatedPassword(result.generatedPassword);
+                    setShowCreatedPassword(true);
+                    if (newCompany.sendPasswordEmail) {
+                        toast.success("Empresa criada! Senha enviada por email.");
+                    } else {
+                        toast.success("Empresa criada! Copie a senha abaixo.");
+                    }
+                } else {
+                    toast.success("Empresa criada com sucesso!");
+                    setNewCompany({ name: '', email: '', responsible: '', plan: 'pro', sendPasswordEmail: false });
+                    setIsCreateOpen(false);
+                }
                 loadData();
             } else {
                 toast.error(result.error);
@@ -162,6 +188,104 @@ export default function AdminDashboard() {
             toast.error("Erro ao criar empresa");
         } finally {
             setIsCreating(false);
+        }
+    };
+
+    const handleCloseCreateDialog = () => {
+        setIsCreateOpen(false);
+        setCreatedPassword(null);
+        setShowCreatedPassword(false);
+        setNewCompany({ name: '', email: '', responsible: '', plan: 'pro', sendPasswordEmail: false });
+    };
+
+    const handleCopyPassword = () => {
+        if (createdPassword) {
+            navigator.clipboard.writeText(createdPassword);
+            toast.success("Senha copiada!");
+        }
+    };
+
+    // Delete Company Handler
+    const openDeleteDialog = (company: Company) => {
+        setSelectedCompany(company);
+        setDeleteConfirmName('');
+        setIsDeleteOpen(true);
+    };
+
+    const handleDeleteCompany = async () => {
+        if (!selectedCompany) return;
+        if (deleteConfirmName !== selectedCompany.name) {
+            toast.error("Digite o nome da empresa corretamente para confirmar");
+            return;
+        }
+
+        setIsDeleting(true);
+        try {
+            const result = await deleteCompany(selectedCompany.id);
+            if (result.success) {
+                toast.success(result.message);
+                setIsDeleteOpen(false);
+                loadData();
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao excluir empresa");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    // Users Management Handlers
+    const openUsersDialog = async (company: Company) => {
+        setSelectedCompany(company);
+        setIsUsersOpen(true);
+        setLoadingUsers(true);
+        try {
+            const users = await getCompanyUsers(company.id);
+            setCompanyUsers(users);
+        } catch {
+            toast.error("Erro ao carregar usuários");
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
+
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`Deseja excluir o usuário "${userName}"?`)) return;
+        try {
+            const result = await deleteUser(userId);
+            if (result.success) {
+                toast.success(result.message);
+                // Refresh users list
+                if (selectedCompany) {
+                    const users = await getCompanyUsers(selectedCompany.id);
+                    setCompanyUsers(users);
+                }
+                loadData();
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao excluir usuário");
+        }
+    };
+
+    const handleToggleUserStatus = async (userId: string) => {
+        try {
+            const result = await toggleUserStatus(userId);
+            if (result.success) {
+                toast.success(result.message);
+                // Refresh users list
+                if (selectedCompany) {
+                    const users = await getCompanyUsers(selectedCompany.id);
+                    setCompanyUsers(users);
+                }
+            } else {
+                toast.error(result.error);
+            }
+        } catch {
+            toast.error("Erro ao alterar status do usuário");
         }
     };
 
@@ -506,57 +630,133 @@ export default function AdminDashboard() {
                         />
                     </div>
 
-                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                    <Dialog open={isCreateOpen} onOpenChange={handleCloseCreateDialog}>
                         <DialogTrigger asChild>
                             <Button className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/25 border-0 transition-all hover:scale-105">
                                 <Plus className="h-4 w-4 mr-2" /> Nova Empresa
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
+                        <DialogContent className="sm:max-w-[500px]">
                             <DialogHeader>
                                 <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
                                 <DialogDescription>
                                     Crie um novo ambiente tenant no sistema.
                                 </DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Nome da Empresa</Label>
-                                    <Input id="name" value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} placeholder="Ex: Acme Corp" />
+
+                            {/* Show password after creation */}
+                            {createdPassword ? (
+                                <div className="space-y-4 py-4">
+                                    <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50 rounded-lg p-4">
+                                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 mb-2">
+                                            <CheckCircle className="h-5 w-5" />
+                                            <span className="font-semibold">Empresa criada com sucesso!</span>
+                                        </div>
+                                        <p className="text-sm text-green-600 dark:text-green-500">
+                                            Um usuário administrador foi criado com o email informado.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
+                                        <Label className="text-xs text-slate-500 uppercase font-semibold mb-2 block">
+                                            Senha Gerada
+                                        </Label>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 bg-white dark:bg-slate-900 border rounded-md p-3 font-mono text-lg tracking-wider select-all">
+                                                {showCreatedPassword ? createdPassword : '••••••••••••'}
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={() => setShowCreatedPassword(!showCreatedPassword)}
+                                            >
+                                                {showCreatedPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={handleCopyPassword}
+                                            >
+                                                <Copy className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        {newCompany.sendPasswordEmail && (
+                                            <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
+                                                <Mail className="h-3 w-3" /> Senha também enviada por email
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg p-3 flex items-start gap-2">
+                                        <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                                            Guarde essa senha em local seguro. Esta é a única vez que ela será exibida.
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">Email Administrativo</Label>
-                                    <Input id="email" value={newCompany.email} onChange={e => setNewCompany({ ...newCompany, email: e.target.value })} placeholder="admin@acme.com" />
+                            ) : (
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name">Nome da Empresa</Label>
+                                        <Input id="name" value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} placeholder="Ex: Acme Corp" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Email Administrativo</Label>
+                                        <Input id="email" value={newCompany.email} onChange={e => setNewCompany({ ...newCompany, email: e.target.value })} placeholder="admin@acme.com" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="resp">Responsável</Label>
+                                        <Input id="resp" value={newCompany.responsible} onChange={e => setNewCompany({ ...newCompany, responsible: e.target.value })} placeholder="Nome do Dono" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="plan">Plano Inicial</Label>
+                                        <Select
+                                            value={newCompany.plan}
+                                            onValueChange={(value) => setNewCompany({ ...newCompany, plan: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione um plano" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {Object.values(PLANS).map((plan) => (
+                                                    <SelectItem key={plan.id} value={plan.id}>
+                                                        {plan.name} - {plan.limits.proposals} propostas
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Send password by email option */}
+                                    <div className="flex items-center gap-2 pt-2 border-t">
+                                        <input
+                                            type="checkbox"
+                                            id="sendPasswordEmail"
+                                            checked={newCompany.sendPasswordEmail}
+                                            onChange={e => setNewCompany({ ...newCompany, sendPasswordEmail: e.target.checked })}
+                                            className="rounded border-slate-300"
+                                        />
+                                        <Label htmlFor="sendPasswordEmail" className="text-sm font-normal cursor-pointer">
+                                            Enviar senha por email ao criar
+                                        </Label>
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="resp">Responsável</Label>
-                                    <Input id="resp" value={newCompany.responsible} onChange={e => setNewCompany({ ...newCompany, responsible: e.target.value })} placeholder="Nome do Dono" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="plan">Plano Inicial</Label>
-                                    <Select
-                                        value={newCompany.plan}
-                                        onValueChange={(value) => setNewCompany({ ...newCompany, plan: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione um plano" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.values(PLANS).map((plan) => (
-                                                <SelectItem key={plan.id} value={plan.id}>
-                                                    {plan.name} - {plan.limits.proposals} propostas
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
+                            )}
+
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
-                                <Button onClick={handleCreateCompany} disabled={isCreating}>
-                                    {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Criar Empresa
-                                </Button>
+                                {createdPassword ? (
+                                    <Button onClick={handleCloseCreateDialog}>
+                                        Concluir
+                                    </Button>
+                                ) : (
+                                    <>
+                                        <Button variant="outline" onClick={handleCloseCreateDialog}>Cancelar</Button>
+                                        <Button onClick={handleCreateCompany} disabled={isCreating}>
+                                            {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Criar Empresa
+                                        </Button>
+                                    </>
+                                )}
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -797,6 +997,143 @@ export default function AdminDashboard() {
                     </DialogContent>
                 </Dialog>
 
+                {/* Delete Company Dialog */}
+                <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                    <DialogContent className="sm:max-w-[450px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-red-600">
+                                <Trash2 className="h-5 w-5" /> Excluir Empresa
+                            </DialogTitle>
+                            <DialogDescription>
+                                Esta ação é irreversível e excluirá todos os dados da empresa.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm text-red-800 dark:text-red-400 font-medium">
+                                            Você está prestes a excluir:
+                                        </p>
+                                        <p className="text-lg font-bold text-red-900 dark:text-red-300 mt-1">
+                                            {selectedCompany?.name}
+                                        </p>
+                                        <ul className="text-xs text-red-700 dark:text-red-400 mt-2 space-y-1 list-disc list-inside">
+                                            <li>Todos os usuários da empresa</li>
+                                            <li>Todos os clientes e propostas</li>
+                                            <li>Produtos, configurações e integrações</li>
+                                            <li>Assinatura do Stripe (se houver)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="deleteConfirm" className="text-sm">
+                                    Digite <span className="font-bold">{selectedCompany?.name}</span> para confirmar:
+                                </Label>
+                                <Input
+                                    id="deleteConfirm"
+                                    value={deleteConfirmName}
+                                    onChange={e => setDeleteConfirmName(e.target.value)}
+                                    placeholder="Nome da empresa"
+                                    className="border-red-200 focus:border-red-500"
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
+                            <Button
+                                onClick={handleDeleteCompany}
+                                disabled={isDeleting || deleteConfirmName !== selectedCompany?.name}
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Excluir Permanentemente
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Users Management Dialog */}
+                <Dialog open={isUsersOpen} onOpenChange={setIsUsersOpen}>
+                    <DialogContent className="sm:max-w-[600px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Users className="h-5 w-5" /> Usuários - {selectedCompany?.name}
+                            </DialogTitle>
+                            <DialogDescription>
+                                Gerencie os usuários desta empresa.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="max-h-[400px] overflow-y-auto">
+                            {loadingUsers ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                </div>
+                            ) : companyUsers.length === 0 ? (
+                                <div className="text-center py-12 text-muted-foreground">
+                                    <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                                    <p>Nenhum usuário encontrado</p>
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Nome</TableHead>
+                                            <TableHead>Email</TableHead>
+                                            <TableHead>Cargo</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead></TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {companyUsers.map((user) => (
+                                            <TableRow key={user.id}>
+                                                <TableCell className="font-medium">{user.name}</TableCell>
+                                                <TableCell className="text-xs text-slate-500">{user.email}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline" className="capitalize">
+                                                        {user.role}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge className={user.isActive ? 'bg-green-100 text-green-700 border-0' : 'bg-red-100 text-red-700 border-0'}>
+                                                        {user.isActive ? 'Ativo' : 'Inativo'}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-1">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7"
+                                                            onClick={() => handleToggleUserStatus(user.id)}
+                                                            title={user.isActive ? 'Desativar' : 'Ativar'}
+                                                        >
+                                                            {user.isActive ? <Ban className="h-4 w-4 text-orange-500" /> : <CheckCircle className="h-4 w-4 text-green-500" />}
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                            onClick={() => handleDeleteUser(user.id, user.name)}
+                                                            title="Excluir usuário"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
                 {/* Companies Table */}
                 <Card className="border-0 shadow-xl shadow-slate-200/40 dark:shadow-slate-900/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl overflow-hidden">
                     <div className="overflow-x-auto">
@@ -948,6 +1285,16 @@ export default function AdminDashboard() {
 
                                                     <Button variant="ghost" size="icon" onClick={() => handleToggleStatus(company.id, company.status)} className={`h-8 w-8 ${company.status === 'active' ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-green-500 hover:text-green-600 hover:bg-green-50'}`} title={company.status === 'active' ? 'Suspender Empresa' : 'Ativar Empresa'}>
                                                         {company.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                                                    </Button>
+
+                                                    {/* Users Management */}
+                                                    <Button variant="ghost" size="icon" onClick={() => openUsersDialog(company)} className="h-8 w-8 text-purple-500 hover:text-purple-600 hover:bg-purple-50" title="Gerenciar Usuários">
+                                                        <Users className="h-4 w-4" />
+                                                    </Button>
+
+                                                    {/* Delete Company */}
+                                                    <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(company)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" title="Excluir Empresa">
+                                                        <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             </TableCell>

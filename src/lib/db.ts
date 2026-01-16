@@ -161,6 +161,30 @@ export async function getCompany() {
     };
 }
 
+// Get company by ID (for public proposal viewing - no session required)
+export async function getCompanyById(companyId: string) {
+    if (!companyId) return null;
+
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        include: {
+            portfolioItems: { where: { isActive: true }, orderBy: { createdAt: 'desc' } },
+            clientLogos: { where: { isActive: true } }
+        }
+    });
+
+    if (!company) return null;
+
+    return {
+        ...company,
+        updatedAt: undefined,
+        createdAt: undefined,
+        portfolioItems: (company as any).portfolioItems?.map(({ createdAt, updatedAt, ...i }: any) => i) || [],
+        clientLogos: company.clientLogos.map(({ createdAt, updatedAt, ...i }) => i),
+        hasAsaasIntegration: !!company.asaasApiKey,
+    };
+}
+
 export async function updateCompany(data: Company) {
     const session = await getSession();
     if (!session || !session.companyId) throw new Error("Unauthorized");

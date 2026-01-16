@@ -1,5 +1,5 @@
-import { fetchCompany, fetchProposal } from "@/app/actions";
-import { getProducts } from "@/lib/db";
+import { fetchCompanyById, fetchProposal } from "@/app/actions";
+import { getProducts, prisma } from "@/lib/db";
 import { ProposalView } from "@/components/proposal-view";
 import { ProposalViewModern } from "@/components/proposal-view-modern";
 import { ProposalViewMinimal } from "@/components/proposal-view-minimal";
@@ -16,13 +16,15 @@ export async function generateMetadata(
 ): Promise<Metadata> {
     const id = (await params).id;
     const proposal = await fetchProposal(id);
-    const company = await fetchCompany();
 
     if (!proposal) {
         return {
             title: 'Proposta não encontrada',
         };
     }
+
+    // Get company from proposal's companyId
+    const company = await fetchCompanyById((proposal as any).companyId);
 
     return {
         title: `Proposta para ${proposal.clientName} | ${company?.name || 'DL Pro'}`,
@@ -56,12 +58,18 @@ function ProposalTemplate({
 export default async function ProposalPage({ params }: Props) {
     const { id } = await params;
     const proposal = await fetchProposal(id);
-    const company = await fetchCompany();
-    const products = await getProducts();
 
     if (!proposal) {
         notFound();
     }
+
+    // Get company from proposal's companyId (this is the fix for multi-tenant logo bug)
+    const company = await fetchCompanyById((proposal as any).companyId);
+
+    // Get products for the company (for potential upsell display)
+    const products = await prisma.product.findMany({
+        where: { companyId: (proposal as any).companyId }
+    });
 
     // Get template from proposal, default to 'classic'
     const template = ((proposal as any).template || 'classic') as ProposalTemplateId;
@@ -75,3 +83,4 @@ export default async function ProposalPage({ params }: Props) {
         />
     );
 }
+
