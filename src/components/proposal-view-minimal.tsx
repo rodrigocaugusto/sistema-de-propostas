@@ -119,23 +119,22 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
         }
     };
 
-    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const shareUrl = (proposal as any).shortCode
+        ? `${typeof window !== 'undefined' ? window.location.origin : ''}/s/${(proposal as any).shortCode}`
+        : (typeof window !== 'undefined' ? window.location.href : '');
 
-    // Build engaging WhatsApp message with formatting (* for bold, _ for italic)
+    // Consolidated and cleaner WhatsApp message
     const whatsappShareText = `🎯 *Proposta Comercial Exclusiva!*
 
 Olá *${proposal.clientName}*! 👋
 
-Preparamos uma proposta _especialmente_ para você/sua empresa${proposal.clientCompany ? ` *${proposal.clientCompany}*` : ''}.
+Preparamos uma proposta _especialmente_ para você${proposal.clientCompany ? ` / *${proposal.clientCompany}*` : ''}.
 
-✨ _Confira todos os detalhes, condições e benefícios_ através do link abaixo:
+✨ _Confira todos os detalhes_ no link abaixo:
 
 👉 ${shareUrl}
 
-📱 Acesse pelo link acima para visualizar a proposta completa e aprovar com apenas um clique!
-
-_Estamos à disposição para esclarecer qualquer dúvida._ 😊
-
+Ficamos à disposição!
 — *${company?.name || 'Equipe Comercial'}*`;
 
     const telegramShareText = `Proposta comercial de ${company?.name || 'nossa empresa'} para ${proposal.clientName}`;
@@ -145,7 +144,8 @@ _Estamos à disposição para esclarecer qualquer dúvida._ 😊
         let url = '';
         switch (platform) {
             case 'whatsapp':
-                url = `https://wa.me/?text=${encodeURIComponent(whatsappShareText)}`;
+                // Use api.whatsapp.com for better cross-device support (desktop/mobile)
+                url = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappShareText)}`;
                 break;
             case 'telegram':
                 url = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(telegramShareText)}`;

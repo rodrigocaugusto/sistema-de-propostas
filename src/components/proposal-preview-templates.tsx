@@ -418,7 +418,7 @@ export function ClassicPreview({
     clientLogosGrayscale,
     portfolioItems
 }: ClassicPreviewProps) {
-    const displayPortfolio = portfolioItems?.length ? portfolioItems : (company?.portfolioItems || []);
+    const displayPortfolio = portfolioItems !== undefined ? portfolioItems : (company?.portfolioItems || []);
     const getContrastTextStyle = (bgColor: string) => ({
         color: isDarkColor(bgColor) ? '#ffffff' : '#1e293b'
     });
@@ -731,7 +731,7 @@ export function ModernPreview({
     clientLogosGrayscale,
     portfolioItems
 }: ModernPreviewProps) {
-    const displayPortfolio = portfolioItems?.length ? portfolioItems : (company?.portfolioItems || []);
+    const displayPortfolio = portfolioItems !== undefined ? portfolioItems : (company?.portfolioItems || []);
     const gradientStyle = {
         background: `linear-gradient(135deg, ${customColors.gradientStart}, ${customColors.gradientMiddle}, ${customColors.gradientEnd})`
     };
@@ -1025,7 +1025,7 @@ export function MinimalPreview({
     clientLogosGrayscale,
     portfolioItems
 }: MinimalPreviewProps) {
-    const displayPortfolio = portfolioItems?.length ? portfolioItems : (company?.portfolioItems || []);
+    const displayPortfolio = portfolioItems !== undefined ? portfolioItems : (company?.portfolioItems || []);
     return (
         <div className="border rounded-xl overflow-hidden shadow-2xl" style={{ backgroundColor: customColors.backgroundColor }}>
             {/* Minimal Header */}
