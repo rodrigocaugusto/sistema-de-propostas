@@ -275,9 +275,9 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
     const companyId = session.companyId;
 
     // --- CHECK PLAN LIMITS ---
-    const company = await prisma.company.findUnique({
+    const company: any = await prisma.company.findUnique({
         where: { id: companyId },
-        select: { plan: true, createdAt: true }
+        select: { plan: true, createdAt: true, currentPeriodStart: true } as any
     });
 
     if (!company) throw new Error("Company not found");
@@ -294,15 +294,19 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
     }
 
     // Logic for Counting Proposals (Monthly for others, Total for Trial)
-    let countWhere = { companyId };
+    let countWhere: any = { companyId };
 
-    // If NOT trial, filter by current month
+    // If NOT trial, filter by current subscription period OR current month (fallback)
     if (planId !== 'trial') {
-        Object.assign(countWhere, {
+        // Use subscription start date if available, otherwise fallback to calendar month
+        const periodStart = (company as any).currentPeriodStart || getStartOfMonth();
+
+        countWhere = {
+            ...countWhere,
             createdAt: {
-                gte: getStartOfMonth()
+                gte: periodStart
             }
-        });
+        };
     }
 
     const currentUsage = await prisma.proposal.count({ where: countWhere });

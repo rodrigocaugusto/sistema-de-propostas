@@ -325,25 +325,24 @@ export async function POST(req: Request) {
     }
 
     // Handle subscription changes
-    if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
-        const subscription = event.data.object as Stripe.Subscription;
+    if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.created') {
+        const subscription = event.data.object as any;
 
         const company = await prisma.company.findFirst({
             where: { stripeSubscriptionId: subscription.id }
         });
 
         if (company) {
-            if (subscription.status !== 'active' && subscription.status !== 'trialing') {
-                await prisma.company.update({
-                    where: { id: company.id },
-                    data: { status: 'suspended' }
-                });
-            } else {
-                await prisma.company.update({
-                    where: { id: company.id },
-                    data: { status: 'active' }
-                });
-            }
+            const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+
+            await prisma.company.update({
+                where: { id: company.id },
+                data: {
+                    status: isActive ? 'active' : 'suspended',
+                    currentPeriodStart: new Date(subscription.current_period_start * 1000),
+                    subscriptionEndsAt: new Date(subscription.current_period_end * 1000)
+                } as any
+            });
         }
     }
 

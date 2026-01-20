@@ -58,6 +58,19 @@ function BillingContent() {
     const [loadingInvoices, setLoadingInvoices] = useState(true);
     const [canceling, setCanceling] = useState(false);
     const [reactivating, setReactivating] = useState(false);
+
+    useEffect(() => {
+        const error = searchParams.get('error');
+        if (error) {
+            toast.error(error, {
+                duration: Infinity, // Keep it visible until dismissed
+                action: {
+                    label: 'Entendi',
+                    onClick: () => toast.dismiss()
+                }
+            });
+        }
+    }, [searchParams]);
     const [purchaseTracked, setPurchaseTracked] = useState(false);
 
     // Track Purchase event when returning from successful checkout

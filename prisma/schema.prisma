@@ -54,6 +54,7 @@ model Company {
   // Subscription/License control
   trialEndsAt          DateTime? // When trial expires (null = not on trial)
   subscriptionEndsAt   DateTime? // When current subscription period ends
+  currentPeriodStart   DateTime? // When current subscription period started (for limits)
   
   stripeCustomerId     String?
   stripeSubscriptionId String?
