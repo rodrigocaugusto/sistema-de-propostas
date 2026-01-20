@@ -148,6 +148,18 @@ export function PortfolioManager({ initialData }: PortfolioManagerProps) {
 
     return (
         <div className="space-y-6">
+            {/* Recommended image size info */}
+            <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <ImageIcon className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+                <div>
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Tamanho recomendado para imagens</p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                        Para melhor visualização nas propostas, recomendamos imagens com <strong>1200 x 800 pixels</strong> (proporção 3:2).
+                        Imagens menores podem aparecer pixeladas, e maiores serão redimensionadas automaticamente.
+                    </p>
+                </div>
+            </div>
+
             <div className="flex flex-wrap gap-2">
                 {!showNewForm && (
                     <Button

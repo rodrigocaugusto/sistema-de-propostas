@@ -123,16 +123,7 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
     const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
     const [selectedPortfolioItemIds, setSelectedPortfolioItemIds] = useState<string[]>([]);
 
-    // Initialize selected portfolio items if any exist and are active ?
-    // Or select all by default? 
-    useEffect(() => {
-        if (portfolioItems.length > 0 && selectedPortfolioItemIds.length === 0) {
-            // Default select ALL? Or None? User usually wants to curate.
-            // Let's select ALL for convenience if the list is small? 
-            // Better: select ALL.
-            setSelectedPortfolioItemIds(portfolioItems.filter(i => i.isActive).map(i => i.id));
-        }
-    }, [portfolioItems]); // Run once on mount/load
+    // Note: Portfolio items start empty - user must manually select which ones to include
 
     // Recurring period options
     const [recurringPeriodType, setRecurringPeriodType] = useState<'months' | 'years' | 'indeterminate'>('indeterminate');
@@ -199,32 +190,13 @@ export function ProposalForm({ company, products: initialProducts, paymentMethod
         );
     };
 
+    // Toggle portfolio item selection - simple add/remove
     const togglePortfolioItem = (id: string) => {
-        const isSelected = selectedPortfolioItemIds.includes(id);
-        if (isSelected) {
-            setSelectedPortfolioItemIds(prev => prev.filter(i => i !== id));
-            return;
-        }
-
-        const newItem = portfolioItems.find(i => i.id === id);
-        if (!newItem) return;
-
-        // Check existing selections
-        const currentSelection = portfolioItems.filter(i => selectedPortfolioItemIds.includes(i.id));
-        const existingSameType = currentSelection.find(i => i.type === newItem.type);
-
-        if (existingSameType) {
-            // Auto-swap if same type exists
-            setSelectedPortfolioItemIds(prev => [...prev.filter(pid => pid !== existingSameType.id), id]);
-            toast.info(`Galeria de ${newItem.type === 'video' ? 'Vídeo' : 'Imagem'} atualizada.`);
-        } else {
-            // Check max limit (should cover edge cases)
-            if (currentSelection.length >= 2) {
-                toast.error('Máximo de 2 galerias permitidas.');
-                return;
-            }
-            setSelectedPortfolioItemIds(prev => [...prev, id]);
-        }
+        setSelectedPortfolioItemIds(prev =>
+            prev.includes(id)
+                ? prev.filter(i => i !== id)
+                : [...prev, id]
+        );
     };
 
     const selectClient = (clientId: string) => {
