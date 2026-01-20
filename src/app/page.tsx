@@ -153,7 +153,7 @@ export default function HomePage() {
                             <div className="aspect-video relative">
                                 <iframe
                                     className="absolute inset-0 w-full h-full"
-                                    src="https://www.youtube.com/embed/AGM8jMtZgc0?rel=0"
+                                    src="https://www.youtube.com/embed/Bwj3MPRo5q4?rel=0"
                                     title="Apresentação do Sistema"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen
