@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react";
-import { AuditProposal } from "@/app/audit/actions";
+import { AuditProposal } from "@/app/(protected)/audit/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
