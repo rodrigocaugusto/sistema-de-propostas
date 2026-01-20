@@ -120,19 +120,38 @@ export function ProposalViewMinimal({ proposal, company, products = [] }: Propos
     };
 
     const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-    const shareText = `Proposta comercial de ${company?.name || 'nossa empresa'} para ${proposal.clientName}`;
+
+    // Build engaging WhatsApp message with formatting (* for bold, _ for italic)
+    const whatsappShareText = `🎯 *Proposta Comercial Exclusiva!*
+
+Olá *${proposal.clientName}*! 👋
+
+Preparamos uma proposta _especialmente_ para você/sua empresa${proposal.clientCompany ? ` *${proposal.clientCompany}*` : ''}.
+
+✨ _Confira todos os detalhes, condições e benefícios_ através do link abaixo:
+
+👉 ${shareUrl}
+
+📱 Acesse pelo link acima para visualizar a proposta completa e aprovar com apenas um clique!
+
+_Estamos à disposição para esclarecer qualquer dúvida._ 😊
+
+— *${company?.name || 'Equipe Comercial'}*`;
+
+    const telegramShareText = `Proposta comercial de ${company?.name || 'nossa empresa'} para ${proposal.clientName}`;
+    const emailShareText = `Olá ${proposal.clientName},\n\nPreparamos uma proposta comercial especialmente para você.\nAcesse o link abaixo para visualizar todos os detalhes:\n\n`;
 
     const handleShare = (platform: 'whatsapp' | 'telegram' | 'email') => {
         let url = '';
         switch (platform) {
             case 'whatsapp':
-                url = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
+                url = `https://wa.me/?text=${encodeURIComponent(whatsappShareText)}`;
                 break;
             case 'telegram':
-                url = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+                url = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(telegramShareText)}`;
                 break;
             case 'email':
-                url = `mailto:?subject=${encodeURIComponent(`Proposta Comercial - ${company?.name || 'Nova Proposta'}`)}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`;
+                url = `mailto:?subject=${encodeURIComponent(`Proposta Comercial - ${company?.name || 'Nova Proposta'}`)}&body=${encodeURIComponent(emailShareText + shareUrl)}`;
                 break;
         }
         if (url) window.open(url, '_blank');
