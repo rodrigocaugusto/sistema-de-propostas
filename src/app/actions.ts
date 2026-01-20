@@ -156,7 +156,10 @@ export async function createNewProposal(data: Omit<Proposal, 'id' | 'createdAt' 
             try {
                 const company = await getCompany();
                 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
-                const proposalUrl = `${baseUrl}/p/${fullProposal.id}`;
+                // Use short URL if available, otherwise fallback to full URL
+                const proposalUrl = (fullProposal as any).shortCode
+                    ? `${baseUrl}/s/${(fullProposal as any).shortCode}`
+                    : `${baseUrl}/p/${fullProposal.id}`;
 
                 const { sendProposalNotification } = await import('@/lib/email');
                 if (company) {
@@ -353,9 +356,11 @@ export async function acceptProposal(id: string) {
             if (company && company.email) {
                 const { sendAcceptanceConfirmation } = await import('@/lib/email');
 
-                // Build proposal URL
+                // Build proposal URL - use short URL if available
                 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
-                const proposalUrl = `${baseUrl}/p/${proposal.id}`;
+                const proposalUrl = (proposal as any).shortCode
+                    ? `${baseUrl}/s/${(proposal as any).shortCode}`
+                    : `${baseUrl}/p/${proposal.id}`;
 
                 await sendAcceptanceConfirmation(company.email, {
                     companyEmail: company.email,

@@ -122,6 +122,7 @@ model Proposal {
   validityDays        Int           @default(15)
   notes               Json?
   customColors        Json?
+  shortCode           String?       @unique // Short URL code for sharing (e.g., "aB3xK7")
   includePortfolio      Boolean       @default(false)
   includeClientLogos    Boolean       @default(false)
   clientLogosGrayscale  Boolean       @default(false)

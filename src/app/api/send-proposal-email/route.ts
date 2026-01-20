@@ -25,9 +25,11 @@ export async function POST(request: NextRequest) {
         // Get company details
         const company = await getCompany();
 
-        // Build proposal URL
+        // Build proposal URL - use short URL if available
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
-        const proposalUrl = `${baseUrl}/p/${proposal.id}`;
+        const proposalUrl = (proposal as any).shortCode
+            ? `${baseUrl}/s/${(proposal as any).shortCode}`
+            : `${baseUrl}/p/${proposal.id}`;
 
         // Send notification email to client (without values)
         const result = await sendProposalNotification(proposal.clientEmail, {

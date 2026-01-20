@@ -8,6 +8,38 @@ export const prisma = globalForPrisma.prisma || new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
+/**
+ * Generate a unique short code for proposal URLs
+ * Uses alphanumeric characters (no confusing ones like 0/O, 1/l)
+ */
+async function generateShortCode(): Promise<string> {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const length = 6;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+        let code = '';
+        for (let i = 0; i < length; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        // Check if code already exists
+        const existing = await prisma.proposal.findFirst({
+            where: { shortCode: code },
+            select: { id: true }
+        });
+
+        if (!existing) {
+            return code;
+        }
+        attempts++;
+    }
+
+    // Fallback: use timestamp-based code
+    return Date.now().toString(36).toUpperCase();
+}
+
 /* 
   Legacy Interface Types 
   (Kept here to avoid breaking imports)
@@ -360,6 +392,7 @@ export async function createProposal(data: Omit<Proposal, 'id' | 'createdAt' | '
             recurringPeriodType: data.recurringPeriodType || null,
             recurringPeriod: data.recurringPeriod || null,
             customColors: (data.customColors || null) as any,
+            shortCode: await generateShortCode(),
             includePortfolio: data.includePortfolio ?? false,
             includeClientLogos: data.includeClientLogos ?? false,
             clientLogosGrayscale: data.clientLogosGrayscale ?? false,
@@ -410,6 +443,7 @@ function transformProposal(p: any) {
         notes: castToStringArray(p.notes),
         customColors: p.customColors as any || {},
         portfolioItems: p.portfolioItems || [], // Include relations
+        shortCode: p.shortCode || null, // Short URL code
     };
 }
 

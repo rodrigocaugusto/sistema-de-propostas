@@ -15,7 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { FileText, Pencil, ArrowUpRight, Trash2, LayoutGrid, List, Search, Filter, MoreHorizontal } from "lucide-react";
+import { FileText, Pencil, ArrowUpRight, Trash2, LayoutGrid, List, Search, Filter, MoreHorizontal, Copy, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -284,7 +285,7 @@ export function ProposalListView({ initialProposals }: ProposalListViewProps) {
                                         <StatusBadge status={proposal.status} />
 
                                         <div className="flex items-center">
-                                            <ActionMenu proposalId={proposal.id} onDelete={(e) => handleDeleteSingle(proposal.id, e)} />
+                                            <ActionMenu proposalId={proposal.id} shortCode={(proposal as any).shortCode} onDelete={(e) => handleDeleteSingle(proposal.id, e)} />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -344,7 +345,7 @@ export function ProposalListView({ initialProposals }: ProposalListViewProps) {
                                             <CardContent className="p-3">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className="text-xs font-mono text-slate-400">#{proposal.proposalNumber}</span>
-                                                    <ActionMenu proposalId={proposal.id} onDelete={(e) => handleDeleteSingle(proposal.id, e)} />
+                                                    <ActionMenu proposalId={proposal.id} shortCode={(proposal as any).shortCode} onDelete={(e) => handleDeleteSingle(proposal.id, e)} />
                                                 </div>
                                                 <Link href={`/p/${proposal.id}`} target="_blank" className="block hover:opacity-80">
                                                     <h4 className="font-semibold text-sm mb-1 line-clamp-1" title={proposal.clientName}>{proposal.clientName}</h4>
@@ -384,7 +385,24 @@ export function ProposalListView({ initialProposals }: ProposalListViewProps) {
     );
 }
 
-function ActionMenu({ proposalId, onDelete }: { proposalId: string, onDelete: (e: any) => void }) {
+function ActionMenu({ proposalId, shortCode, onDelete }: { proposalId: string, shortCode?: string | null, onDelete: (e: any) => void }) {
+    const handleCopyUrl = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br';
+        const url = shortCode
+            ? `${baseUrl}/s/${shortCode}`
+            : `${baseUrl}/p/${proposalId}`;
+
+        try {
+            await navigator.clipboard.writeText(url);
+            toast.success('Link copiado!', {
+                description: shortCode ? 'URL curta copiada para a área de transferência' : 'Link da proposta copiado'
+            });
+        } catch {
+            toast.error('Erro ao copiar link');
+        }
+    };
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -398,6 +416,11 @@ function ActionMenu({ proposalId, onDelete }: { proposalId: string, onDelete: (e
                         <ArrowUpRight className="mr-2 h-4 w-4" /> Ver Proposta
                     </DropdownMenuItem>
                 </Link>
+                <DropdownMenuItem onClick={handleCopyUrl}>
+                    <LinkIcon className="mr-2 h-4 w-4" /> Copiar Link
+                    {shortCode && <span className="ml-1 text-xs text-emerald-600">(curto)</span>}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <Link href={`/proposals/${proposalId}/edit`}>
                     <DropdownMenuItem>
                         <Pencil className="mr-2 h-4 w-4" /> Editar
