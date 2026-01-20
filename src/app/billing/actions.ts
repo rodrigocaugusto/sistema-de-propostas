@@ -77,7 +77,7 @@ export async function createCheckoutSession(planId: string, interval: 'monthly' 
             },
             client_reference_id: session.companyId,
             ...(customerId ? { customer: customerId } : { customer_email: user?.email }),
-            success_url: `${appUrl}/billing?success=true`,
+            success_url: `${appUrl}/billing?success=true&plan=${planId}&interval=${interval}`,
             cancel_url: `${appUrl}/billing?canceled=true`,
         });
 

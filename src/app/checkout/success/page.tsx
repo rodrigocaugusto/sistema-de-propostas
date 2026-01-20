@@ -5,19 +5,31 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { trackPurchase, PLAN_VALUES, PLAN_NAMES, PlanIdType } from '@/lib/meta-pixel';
 
 function SuccessContent() {
     const searchParams = useSearchParams();
     const sessionId = searchParams.get('session_id');
+    const planId = searchParams.get('plan') || 'pro'; // Default to pro if not specified
+    const interval = (searchParams.get('interval') || 'monthly') as 'monthly' | 'annual';
     const [loading, setLoading] = useState(true);
+    const [purchaseTracked, setPurchaseTracked] = useState(false);
 
     useEffect(() => {
+        // Track Purchase event for Meta Pixel (only once)
+        if (!purchaseTracked && sessionId) {
+            const planValue = PLAN_VALUES[planId as PlanIdType]?.[interval] || 0;
+            const planName = PLAN_NAMES[planId as PlanIdType] || planId;
+            trackPurchase(planId, planName, planValue, interval, sessionId);
+            setPurchaseTracked(true);
+        }
+
         // Give webhook time to process
         const timer = setTimeout(() => {
             setLoading(false);
         }, 3000);
         return () => clearTimeout(timer);
-    }, []);
+    }, [sessionId, planId, interval, purchaseTracked]);
 
     return (
         <div className="max-w-lg w-full text-center">

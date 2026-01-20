@@ -60,7 +60,7 @@ export async function POST(req: Request) {
                 billingPeriod,
                 isNewSignup: 'true', // Flag to indicate this is a new user signup
             },
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br'}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br'}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan=${planId}&interval=${billingPeriod}`,
             cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.digitalleads.com.br'}/?canceled=true`,
             allow_promotion_codes: true,
             billing_address_collection: 'required',

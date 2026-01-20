@@ -10,6 +10,7 @@ import { createTrialAccount } from '@/app/auth/actions';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Loader2, Lock, Mail, Building2, User } from 'lucide-react';
 import Link from 'next/link';
+import { trackLead, trackCompleteRegistration } from '@/lib/meta-pixel';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -35,6 +36,9 @@ export default function RegisterPage() {
             return;
         }
 
+        // Track Lead event for Meta Pixel
+        trackLead(formData.email);
+
         setIsLoading(true);
 
         try {
@@ -44,6 +48,8 @@ export default function RegisterPage() {
             });
 
             if (result.success) {
+                // Track CompleteRegistration for successful trial signup
+                trackCompleteRegistration(formData.email);
                 toast.success('Conta criada! Verifique seu email.');
                 router.push(`/register/email-sent?email=${encodeURIComponent(formData.email)}`);
             } else {

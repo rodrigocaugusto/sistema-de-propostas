@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PLANS, PlanId } from '@/lib/plans';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,23 +9,52 @@ import { Check, LogIn, ArrowRight, Zap, Clock, Target, CreditCard, Bell, Link2, 
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { trackInitiateCheckout, trackViewContent, PLAN_VALUES, PLAN_NAMES, PlanIdType } from '@/lib/meta-pixel';
 
 export default function HomePage() {
     const [isAnnual, setIsAnnual] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+    const [pricingViewed, setPricingViewed] = useState(false);
+    const pricingRef = useRef<HTMLElement>(null);
 
     const plansToShow = Object.values(PLANS).filter(p => p.id !== 'trial');
 
+    // Track ViewContent when pricing section is visible
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && !pricingViewed) {
+                    trackViewContent('Pricing Section', 'plans');
+                    setPricingViewed(true);
+                }
+            },
+            { threshold: 0.3 }
+        );
+
+        if (pricingRef.current) {
+            observer.observe(pricingRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [pricingViewed]);
+
     const handleCheckout = async (planId: PlanId) => {
         setLoadingPlan(planId);
+
+        // Track InitiateCheckout event for Meta Pixel
+        const interval = isAnnual ? 'annual' : 'monthly';
+        const planValue = PLAN_VALUES[planId as PlanIdType]?.[interval] || 0;
+        const planName = PLAN_NAMES[planId as PlanIdType] || planId;
+        trackInitiateCheckout(planId, planName, planValue, interval);
+
         try {
             const response = await fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     planId,
-                    billingPeriod: isAnnual ? 'annual' : 'monthly',
+                    billingPeriod: interval,
                 }),
             });
 
@@ -393,7 +422,7 @@ export default function HomePage() {
                 </section>
 
                 {/* PRICING SECTION */}
-                <section id="pricing" className="py-24 bg-white dark:bg-slate-900 relative overflow-hidden">
+                <section ref={pricingRef} id="pricing" className="py-24 bg-white dark:bg-slate-900 relative overflow-hidden">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
                         <div className="absolute top-40 right-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl"></div>
                         <div className="absolute bottom-40 left-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl"></div>

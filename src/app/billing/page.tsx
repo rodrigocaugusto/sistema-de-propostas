@@ -3,6 +3,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { PLANS, PlanId } from '@/lib/plans';
+import { trackInitiateCheckout, trackViewContent, PLAN_VALUES, PLAN_NAMES, PlanIdType } from '@/lib/meta-pixel';
 import {
     createCheckoutSession,
     createCustomerPortalSession,
@@ -57,6 +58,23 @@ function BillingContent() {
     const [loadingInvoices, setLoadingInvoices] = useState(true);
     const [canceling, setCanceling] = useState(false);
     const [reactivating, setReactivating] = useState(false);
+    const [purchaseTracked, setPurchaseTracked] = useState(false);
+
+    // Track Purchase event when returning from successful checkout
+    useEffect(() => {
+        if (searchParams.get('success') && !purchaseTracked) {
+            const planId = searchParams.get('plan') || 'pro';
+            const interval = (searchParams.get('interval') || 'monthly') as 'monthly' | 'annual';
+            const planValue = PLAN_VALUES[planId as PlanIdType]?.[interval] || 0;
+            const planName = PLAN_NAMES[planId as PlanIdType] || planId;
+
+            // Import trackPurchase dynamically to track the conversion
+            import('@/lib/meta-pixel').then(({ trackPurchase }) => {
+                trackPurchase(planId, planName, planValue, interval);
+                setPurchaseTracked(true);
+            });
+        }
+    }, [searchParams, purchaseTracked]);
 
     useEffect(() => {
         loadData();
@@ -84,8 +102,15 @@ function BillingContent() {
 
     const handleSubscribe = async (planId: string) => {
         setLoadingPlan(planId);
+
+        // Track InitiateCheckout event for Meta Pixel
+        const interval = isAnnual ? 'annual' : 'monthly';
+        const planValue = PLAN_VALUES[planId as PlanIdType]?.[interval] || 0;
+        const planName = PLAN_NAMES[planId as PlanIdType] || planId;
+        trackInitiateCheckout(planId, planName, planValue, interval);
+
         try {
-            const result = await createCheckoutSession(planId, isAnnual ? 'annual' : 'monthly') as { url?: string; error?: string };
+            const result = await createCheckoutSession(planId, interval) as { url?: string; error?: string };
 
             if (result.error) {
                 toast.error(result.error);

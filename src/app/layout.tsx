@@ -8,6 +8,9 @@ import { FloatingReportsButton } from "@/components/floating-reports-button";
 import { LandingWhatsAppChat } from "@/components/landing-whatsapp-chat";
 import { CookieConsent } from "@/components/cookie-consent";
 import { TrialBannerWrapper } from "@/components/trial-banner-wrapper";
+import { MetaPixelProvider, MetaPixelNoscript } from "@/components/meta-pixel-provider";
+import { GTMProvider, GTMNoscript } from "@/components/gtm-provider";
+import { Suspense } from "react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,13 +39,21 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
         suppressHydrationWarning
       >
+        <GTMNoscript />
+        <MetaPixelNoscript />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <Suspense fallback={null}>
+            <GTMProvider>
+              <MetaPixelProvider>
+                {children}
+              </MetaPixelProvider>
+            </GTMProvider>
+          </Suspense>
           <SupportFloatButton />
           <FloatingReportsButton />
           <KnowledgeBaseSidebar />
